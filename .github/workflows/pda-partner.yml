@@ -63,40 +63,51 @@ jobs:
       run: |
         mkdir -p config
         
-        # Base64 값 검증
-        echo "🔍 Validating base64 strings..."
-        echo "SHEETS_SERVICE_ACCOUNT_KEY length: $(echo '${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}' | wc -c)"
-        echo "DRIVE_SERVICE_ACCOUNT_KEY length: $(echo '${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}' | wc -c)"
+        # 환경변수로 안전하게 처리
+        echo "🔍 Processing SHEETS_SERVICE_ACCOUNT_KEY..."
+        echo "$SHEETS_KEY" > /tmp/sheets_b64.txt
+        echo "Base64 length: $(wc -c < /tmp/sheets_b64.txt)"
         
-        # Base64 문자열 정리 (공백, 줄바꿈 제거)
-        echo "🧹 Cleaning base64 strings..."
-        SHEETS_KEY=$(echo '${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}' | tr -d ' \n\r\t')
-        DRIVE_KEY=$(echo '${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}' | tr -d ' \n\r\t')
+        echo "🔍 Processing DRIVE_SERVICE_ACCOUNT_KEY..."
+        echo "$DRIVE_KEY" > /tmp/drive_b64.txt
+        echo "Base64 length: $(wc -c < /tmp/drive_b64.txt)"
         
-        echo "Cleaned SHEETS_KEY length: $(echo "$SHEETS_KEY" | wc -c)"
-        echo "Cleaned DRIVE_KEY length: $(echo "$DRIVE_KEY" | wc -c)"
-        
-        # Base64 디코딩 시도
+        # Base64 디코딩
         echo "🔓 Decoding base64 strings..."
-        echo "$SHEETS_KEY" | base64 --decode > config/sheets-service-account.json || {
-          echo "❌ Failed to decode SHEETS_SERVICE_ACCOUNT_KEY"
-          echo "First 50 chars: $(echo "$SHEETS_KEY" | head -c 50)"
-          exit 1
-        }
+        base64 -d /tmp/sheets_b64.txt > config/sheets-service-account.json
+        base64 -d /tmp/drive_b64.txt > config/drive-service-account.json
         
-        echo "$DRIVE_KEY" | base64 --decode > config/drive-service-account.json || {
-          echo "❌ Failed to decode DRIVE_SERVICE_ACCOUNT_KEY"
-          echo "First 50 chars: $(echo "$DRIVE_KEY" | head -c 50)"
-          exit 1
-        }
-        
-        echo "✅ Google API credentials created successfully"
+        # 결과 확인
+        echo "✅ Files created:"
         ls -la config/
+        
+        echo "🔍 File sizes:"
+        wc -c config/*.json
         
         # JSON 유효성 검사
         echo "🔍 Validating JSON files..."
-        python -m json.tool config/sheets-service-account.json > /dev/null && echo "✅ Sheets JSON is valid"
-        python -m json.tool config/drive-service-account.json > /dev/null && echo "✅ Drive JSON is valid"
+        if python -m json.tool config/sheets-service-account.json > /dev/null 2>&1; then
+          echo "✅ Sheets JSON is valid"
+        else
+          echo "❌ Sheets JSON is invalid"
+          echo "First 100 chars:"
+          head -c 100 config/sheets-service-account.json
+        fi
+        
+        if python -m json.tool config/drive-service-account.json > /dev/null 2>&1; then
+          echo "✅ Drive JSON is valid"
+        else
+          echo "❌ Drive JSON is invalid"
+          echo "First 100 chars:"
+          head -c 100 config/drive-service-account.json
+        fi
+        
+        # 임시 파일 정리
+        rm -f /tmp/sheets_b64.txt /tmp/drive_b64.txt
+        
+      env:
+        SHEETS_KEY: ${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}
+        DRIVE_KEY: ${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}
         
     - name: Set up environment variables
       run: |
