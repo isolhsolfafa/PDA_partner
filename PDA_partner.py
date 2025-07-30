@@ -1466,7 +1466,7 @@ def send_occurrence_email(subject, body_text, graph_files=None, dashboard_file=N
         print(f"⚠️ 이메일 설정이 없어 이메일 전송을 건너뜁니다.")
         print(f"📧 제목: {subject}")
         return
-        
+
     context = ssl.create_default_context()
     msg = MIMEMultipart("mixed")
     msg["From"] = EMAIL_ADDRESS

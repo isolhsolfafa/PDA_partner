@@ -2,6 +2,22 @@ name: Fix Control Character in Service Key
 
 on:
   workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode (true/false)'
+        required: false
+        default: false
+        type: boolean
+      limit:
+        description: 'Row limit for processing'
+        required: false
+        default: '50'
+        type: string
+      generate_graph:
+        description: 'Generate graphs (true/false)'
+        required: true
+        default: false
+        type: boolean
   schedule:
     - cron: '0 1 * * 1'
 
@@ -128,7 +144,32 @@ jobs:
     - name: Run main script
       run: |
         echo "🚀 Running main PDA partner script..."
-        python PDA_partner.py
+        echo "📊 Test mode: ${{ github.event.inputs.test_mode || 'false' }}"
+        echo "📏 Row limit: ${{ github.event.inputs.limit || '50' }}"
+        echo "📈 Generate graph: ${{ github.event.inputs.generate_graph || 'false' }}"
+        
+        # Build command with options
+        CMD="python PDA_partner.py"
+        
+        if [ "${{ github.event.inputs.test_mode || 'false' }}" = "true" ]; then
+          CMD="$CMD --test"
+          echo "🧪 TEST MODE enabled"
+        fi
+        
+        if [ "${{ github.event.inputs.limit || '50' }}" != "50" ]; then
+          CMD="$CMD --limit ${{ github.event.inputs.limit || '50' }}"
+          echo "📏 Row limit set to: ${{ github.event.inputs.limit || '50' }}"
+        fi
+        
+        if [ "${{ github.event.inputs.generate_graph || 'false' }}" = "true" ]; then
+          echo "📈 Graph generation ENABLED"
+        else
+          CMD="$CMD --no-graph"
+          echo "📈 Graph generation DISABLED"
+        fi
+        
+        echo "🚀 Executing: $CMD"
+        $CMD
       env:
         # Service account keys
         SHEETS_SERVICE_ACCOUNT_KEY: ${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}
