@@ -1344,14 +1344,14 @@ def build_combined_email_body(
         tms_total = tms_stats.get("total_count", 0)
         lines.append(
             f'<tr><td><a href="{spreadsheet_url}">{order_no}</a></td><td>{model_name}</td><td>{mech_partner}</td><td>{elec_partner}</td><td>{total_tasks}</td>'
-            f'<td{" style=\"color: red; font-weight: bold;\"" if mech_nan > 0 else ""}>{mech_nan}</td>'
-            f'<td{" style=\"color: red; font-weight: bold;\"" if mech_ot > 0 else ""}>{mech_ot}</td>'
+            f'<td{" style=" + chr(34) + "color: red; font-weight: bold;" + chr(34) if mech_nan > 0 else ""}>{mech_nan}</td>'
+            f'<td{" style=" + chr(34) + "color: red; font-weight: bold;" + chr(34) if mech_ot > 0 else ""}>{mech_ot}</td>'
             f'<td>{render_progress_bar(prog_mech, mech_total, "기구")}</td>'
-            f'<td{" style=\"color: red; font-weight: bold;\"" if elec_nan > 0 else ""}>{elec_nan}</td>'
-            f'<td{" style=\"color: red; font-weight: bold;\"" if elec_ot > 0 else ""}>{elec_ot}</td>'
+            f'<td{" style=" + chr(34) + "color: red; font-weight: bold;" + chr(34) if elec_nan > 0 else ""}>{elec_nan}</td>'
+            f'<td{" style=" + chr(34) + "color: red; font-weight: bold;" + chr(34) if elec_ot > 0 else ""}>{elec_ot}</td>'
             f'<td>{render_progress_bar(prog_elec, elec_total, "전장")}</td>'
-            f'<td{" style=\"color: red; font-weight: bold;\"" if tms_nan > 0 else ""}>{tms_nan}</td>'
-            f'<td{" style=\"color: red; font-weight: bold;\"" if tms_ot > 0 else ""}>{tms_ot}</td>'
+            f'<td{" style=" + chr(34) + "color: red; font-weight: bold;" + chr(34) if tms_nan > 0 else ""}>{tms_nan}</td>'
+            f'<td{" style=" + chr(34) + "color: red; font-weight: bold;" + chr(34) if tms_ot > 0 else ""}>{tms_ot}</td>'
             f'<td>{render_progress_bar(prog_tms, tms_total, "TMS")}</td></tr>'
         )
     lines.append("</table><br>")
