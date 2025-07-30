@@ -72,17 +72,72 @@ jobs:
         echo "$DRIVE_KEY" | tr -d ' \n\r\t' > /tmp/drive_b64_clean.txt
         echo "Cleaned Base64 length: $(wc -c < /tmp/drive_b64_clean.txt)"
         
-        # Base64 디코딩 (더 안전한 방식)
+        # Base64 디코딩
         echo "🔓 Decoding base64 strings..."
-        base64 -d /tmp/sheets_b64_clean.txt > config/sheets-service-account.json 2>/dev/null || {
+        base64 -d /tmp/sheets_b64_clean.txt > /tmp/sheets_raw.json 2>/dev/null || {
           echo "❌ Failed to decode SHEETS_SERVICE_ACCOUNT_KEY"
           exit 1
         }
         
-        base64 -d /tmp/drive_b64_clean.txt > config/drive-service-account.json 2>/dev/null || {
+        base64 -d /tmp/drive_b64_clean.txt > /tmp/drive_raw.json 2>/dev/null || {
           echo "❌ Failed to decode DRIVE_SERVICE_ACCOUNT_KEY"
           exit 1
         }
+        
+        # JSON 수정 스크립트 생성
+        echo "🔧 Creating JSON fix script..."
+        cat > /tmp/fix_json.py << 'EOF'
+        import json
+        import sys
+        import re
+        
+        def fix_json_file(input_file, output_file):
+            try:
+                with open(input_file, 'r') as f:
+                    content = f.read()
+                
+                # private_key 필드의 실제 줄바꿈을 \\n으로 변환
+                # 정규식으로 private_key 내용 찾기
+                pattern = r'"private_key":\s*"([^"]+)"'
+                match = re.search(pattern, content, re.DOTALL)
+                
+                if match:
+                    private_key = match.group(1)
+                    # 실제 줄바꿈을 \\n으로 변환
+                    fixed_private_key = private_key.replace('\n', '\\n')
+                    content = content.replace(match.group(1), fixed_private_key)
+                
+                # JSON 파싱 테스트
+                data = json.loads(content)
+                
+                # 파일 저장
+                with open(output_file, 'w') as f:
+                    json.dump(data, f, indent=2)
+                
+                return True
+                
+            except Exception as e:
+                print(f"Error fixing JSON: {e}")
+                return False
+        
+        if __name__ == "__main__":
+            input_file = sys.argv[1]
+            output_file = sys.argv[2]
+            
+            if fix_json_file(input_file, output_file):
+                print(f"✅ JSON fixed and saved: {output_file}")
+            else:
+                print(f"❌ Failed to fix JSON: {input_file}")
+                # 원본 그대로 복사
+                import shutil
+                shutil.copy(input_file, output_file)
+                sys.exit(1)
+        EOF
+        
+        # JSON 파일 수정
+        echo "🔧 Fixing JSON files..."
+        python /tmp/fix_json.py /tmp/sheets_raw.json config/sheets-service-account.json
+        python /tmp/fix_json.py /tmp/drive_raw.json config/drive-service-account.json
         
         # 결과 확인
         echo "✅ Files created:"
@@ -91,35 +146,27 @@ jobs:
         echo "🔍 File sizes:"
         wc -c config/*.json
         
-        # JSON 유효성 검사 및 문제 진단
-        echo "🔍 Validating JSON files..."
+        # JSON 유효성 검사
+        echo "🔍 Final validation..."
         
         if python -c "import json; json.load(open('config/sheets-service-account.json'))" 2>/dev/null; then
           echo "✅ Sheets JSON is valid"
         else
-          echo "❌ Sheets JSON is invalid - attempting to fix..."
-          # JSON 내용 확인
-          echo "First 200 chars of decoded content:"
-          head -c 200 config/sheets-service-account.json | cat -v
-          echo ""
-          echo "Checking for control characters..."
-          grep -P '[\x00-\x1F\x7F]' config/sheets-service-account.json && echo "Found control characters" || echo "No control characters found"
+          echo "❌ Sheets JSON is still invalid"
+          head -c 200 config/sheets-service-account.json
+          exit 1
         fi
         
         if python -c "import json; json.load(open('config/drive-service-account.json'))" 2>/dev/null; then
           echo "✅ Drive JSON is valid"
         else
-          echo "❌ Drive JSON is invalid - attempting to fix..."
-          # JSON 내용 확인
-          echo "First 200 chars of decoded content:"
-          head -c 200 config/drive-service-account.json | cat -v
-          echo ""
-          echo "Checking for control characters..."
-          grep -P '[\x00-\x1F\x7F]' config/drive-service-account.json && echo "Found control characters" || echo "No control characters found"
+          echo "❌ Drive JSON is still invalid"
+          head -c 200 config/drive-service-account.json
+          exit 1
         fi
         
         # 임시 파일 정리
-        rm -f /tmp/sheets_b64_clean.txt /tmp/drive_b64_clean.txt
+        rm -f /tmp/sheets_b64_clean.txt /tmp/drive_b64_clean.txt /tmp/sheets_raw.json /tmp/drive_raw.json /tmp/fix_json.py
         
       env:
         SHEETS_KEY: ${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}
