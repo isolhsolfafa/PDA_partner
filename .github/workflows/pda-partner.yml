@@ -65,17 +65,24 @@ jobs:
         
         # 환경변수로 안전하게 처리
         echo "🔍 Processing SHEETS_SERVICE_ACCOUNT_KEY..."
-        echo "$SHEETS_KEY" > /tmp/sheets_b64.txt
-        echo "Base64 length: $(wc -c < /tmp/sheets_b64.txt)"
+        echo "$SHEETS_KEY" | tr -d ' \n\r\t' > /tmp/sheets_b64_clean.txt
+        echo "Cleaned Base64 length: $(wc -c < /tmp/sheets_b64_clean.txt)"
         
         echo "🔍 Processing DRIVE_SERVICE_ACCOUNT_KEY..."
-        echo "$DRIVE_KEY" > /tmp/drive_b64.txt
-        echo "Base64 length: $(wc -c < /tmp/drive_b64.txt)"
+        echo "$DRIVE_KEY" | tr -d ' \n\r\t' > /tmp/drive_b64_clean.txt
+        echo "Cleaned Base64 length: $(wc -c < /tmp/drive_b64_clean.txt)"
         
-        # Base64 디코딩
+        # Base64 디코딩 (더 안전한 방식)
         echo "🔓 Decoding base64 strings..."
-        base64 -d /tmp/sheets_b64.txt > config/sheets-service-account.json
-        base64 -d /tmp/drive_b64.txt > config/drive-service-account.json
+        base64 -d /tmp/sheets_b64_clean.txt > config/sheets-service-account.json 2>/dev/null || {
+          echo "❌ Failed to decode SHEETS_SERVICE_ACCOUNT_KEY"
+          exit 1
+        }
+        
+        base64 -d /tmp/drive_b64_clean.txt > config/drive-service-account.json 2>/dev/null || {
+          echo "❌ Failed to decode DRIVE_SERVICE_ACCOUNT_KEY"
+          exit 1
+        }
         
         # 결과 확인
         echo "✅ Files created:"
@@ -84,26 +91,35 @@ jobs:
         echo "🔍 File sizes:"
         wc -c config/*.json
         
-        # JSON 유효성 검사
+        # JSON 유효성 검사 및 문제 진단
         echo "🔍 Validating JSON files..."
-        if python -m json.tool config/sheets-service-account.json > /dev/null 2>&1; then
+        
+        if python -c "import json; json.load(open('config/sheets-service-account.json'))" 2>/dev/null; then
           echo "✅ Sheets JSON is valid"
         else
-          echo "❌ Sheets JSON is invalid"
-          echo "First 100 chars:"
-          head -c 100 config/sheets-service-account.json
+          echo "❌ Sheets JSON is invalid - attempting to fix..."
+          # JSON 내용 확인
+          echo "First 200 chars of decoded content:"
+          head -c 200 config/sheets-service-account.json | cat -v
+          echo ""
+          echo "Checking for control characters..."
+          grep -P '[\x00-\x1F\x7F]' config/sheets-service-account.json && echo "Found control characters" || echo "No control characters found"
         fi
         
-        if python -m json.tool config/drive-service-account.json > /dev/null 2>&1; then
+        if python -c "import json; json.load(open('config/drive-service-account.json'))" 2>/dev/null; then
           echo "✅ Drive JSON is valid"
         else
-          echo "❌ Drive JSON is invalid"
-          echo "First 100 chars:"
-          head -c 100 config/drive-service-account.json
+          echo "❌ Drive JSON is invalid - attempting to fix..."
+          # JSON 내용 확인
+          echo "First 200 chars of decoded content:"
+          head -c 200 config/drive-service-account.json | cat -v
+          echo ""
+          echo "Checking for control characters..."
+          grep -P '[\x00-\x1F\x7F]' config/drive-service-account.json && echo "Found control characters" || echo "No control characters found"
         fi
         
         # 임시 파일 정리
-        rm -f /tmp/sheets_b64.txt /tmp/drive_b64.txt
+        rm -f /tmp/sheets_b64_clean.txt /tmp/drive_b64_clean.txt
         
       env:
         SHEETS_KEY: ${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}
