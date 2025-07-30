@@ -1438,14 +1438,14 @@ def build_combined_email_body(
             nan_count = stats["nan_count"]
             nan_ratio = (nan_count / total_count) * 100 if total_count > 0 else 0
             lines.append(
-                f' <span{" style=\"color: red;\"" if nan_count > 0 else ""}>⚠️ 누락(NaN): {nan_count} 건 (비율: {nan_ratio:.2f}%)</span><br>'
+                f' <span{" style=" + chr(34) + "color: red;" + chr(34) if nan_count > 0 else ""}>⚠️ 누락(NaN): {nan_count} 건 (비율: {nan_ratio:.2f}%)</span><br>'
             )
             if nan_count > 0:
                 lines.append("".join(f"   - {task}<br>" for task in stats["nan_tasks"]))
             ot_count = stats["ot_count"]
             ot_ratio = (ot_count / total_count) * 100 if total_count > 0 else 0
             lines.append(
-                f' <span{" style=\"color: red;\"" if ot_count > 0 else ""}>⏳ 오버타임: {ot_count} 건 (비율: {ot_ratio:.2f}%)</span><br>'
+                f' <span{" style=" + chr(34) + "color: red;" + chr(34) if ot_count > 0 else ""}>⏳ 오버타임: {ot_count} 건 (비율: {ot_ratio:.2f}%)</span><br>'
             )
             if ot_count > 0:
                 lines.append(
