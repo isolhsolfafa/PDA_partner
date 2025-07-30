@@ -193,7 +193,10 @@ class HeatmapGenerator:
                 plt.figtext(
                     0.02,
                     0.02,
-                    f"파트너사 현황: {', '.join(f'{k}: NaN {v['nan_ratio']:.1f}%, OT {v['ot_ratio']:.1f}%' for k, v in partner_stats.items())}",
+                    "파트너사 현황: "
+                    + ", ".join(
+                        f"{k}: NaN {v['nan_ratio']:.1f}%, OT {v['ot_ratio']:.1f}%" for k, v in partner_stats.items()
+                    ),
                     fontsize=8,
                 )
 

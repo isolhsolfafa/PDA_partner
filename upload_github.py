@@ -167,7 +167,8 @@ def insert_nova_graphs_to_html(html_path, nova_images):
 
         def graph_line(label, key):
             if key in nova_images:
-                return f'{label}: <a href="{nova_images[key]['link']}" target="_blank">그래프 보기</a>'
+                link = nova_images[key]["link"]
+                return f'{label}: <a href="{link}" target="_blank">그래프 보기</a>'
             return f'{label}: <span style="color:red;">(링크 없음)</span>'
 
         insert_html = (
