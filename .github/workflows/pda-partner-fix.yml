@@ -25,6 +25,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     
+    env:
+      # Service account key file paths
+      SHEETS_KEY_PATH: config/sheets-service-account.json
+      DRIVE_KEY_PATH: config/drive-service-account.json
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -128,6 +133,10 @@ jobs:
       env:
         SHEETS_SERVICE_ACCOUNT_KEY: ${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}
         DRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}
+        
+        # Service account key file paths for script
+        SHEETS_KEY_PATH: config/sheets-service-account.json
+        DRIVE_KEY_PATH: config/drive-service-account.json
         
     - name: Verify JSON files
       run: |
