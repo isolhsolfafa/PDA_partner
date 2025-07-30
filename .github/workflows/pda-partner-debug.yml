@@ -1,0 +1,51 @@
+name: Debug GitHub Secrets
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug-secrets:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Debug Secrets Length
+      run: |
+        echo "🔍 Debugging GitHub Secrets..."
+        
+        # Secrets 길이 확인
+        echo "SHEETS_SERVICE_ACCOUNT_KEY length: ${#SHEETS_KEY}"
+        echo "DRIVE_SERVICE_ACCOUNT_KEY length: ${#DRIVE_KEY}"
+        echo "SHEETS_SERVICE_ACCOUNT_JSON length: ${#SHEETS_JSON}"
+        echo "DRIVE_SERVICE_ACCOUNT_JSON length: ${#DRIVE_JSON}"
+        
+        # 첫 번째 문자들 확인 (보안상 제한적으로)
+        echo "SHEETS_KEY starts with: $(echo "$SHEETS_KEY" | head -c 10)..."
+        echo "DRIVE_KEY starts with: $(echo "$DRIVE_KEY" | head -c 10)..."
+        echo "SHEETS_JSON starts with: $(echo "$SHEETS_JSON" | head -c 10)..."
+        echo "DRIVE_JSON starts with: $(echo "$DRIVE_JSON" | head -c 10)..."
+        
+        # 빈 문자열 체크
+        if [ -z "$SHEETS_KEY" ]; then
+          echo "❌ SHEETS_SERVICE_ACCOUNT_KEY is empty!"
+        fi
+        
+        if [ -z "$DRIVE_KEY" ]; then
+          echo "❌ DRIVE_SERVICE_ACCOUNT_KEY is empty!"
+        fi
+        
+        if [ -z "$SHEETS_JSON" ]; then
+          echo "❌ SHEETS_SERVICE_ACCOUNT_JSON is empty!"
+        fi
+        
+        if [ -z "$DRIVE_JSON" ]; then
+          echo "❌ DRIVE_SERVICE_ACCOUNT_JSON is empty!"
+        fi
+        
+      env:
+        SHEETS_KEY: ${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}
+        DRIVE_KEY: ${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}
+        SHEETS_JSON: ${{ secrets.SHEETS_SERVICE_ACCOUNT_JSON }}
+        DRIVE_JSON: ${{ secrets.DRIVE_SERVICE_ACCOUNT_JSON }} 
