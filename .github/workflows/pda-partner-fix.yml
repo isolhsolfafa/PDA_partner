@@ -128,7 +128,7 @@ jobs:
     - name: Run main script
       run: |
         echo "🚀 Running main PDA partner script..."
-        python nova.py
+        python PDA_partner.py
         
     - name: Upload results
       uses: actions/upload-artifact@v4
