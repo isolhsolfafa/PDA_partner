@@ -62,10 +62,41 @@ jobs:
     - name: Create Google API credentials
       run: |
         mkdir -p config
-        echo "${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}" | base64 --decode > config/sheets-service-account.json
-        echo "${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}" | base64 --decode > config/drive-service-account.json
+        
+        # Base64 값 검증
+        echo "🔍 Validating base64 strings..."
+        echo "SHEETS_SERVICE_ACCOUNT_KEY length: $(echo '${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}' | wc -c)"
+        echo "DRIVE_SERVICE_ACCOUNT_KEY length: $(echo '${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}' | wc -c)"
+        
+        # Base64 문자열 정리 (공백, 줄바꿈 제거)
+        echo "🧹 Cleaning base64 strings..."
+        SHEETS_KEY=$(echo '${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}' | tr -d ' \n\r\t')
+        DRIVE_KEY=$(echo '${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}' | tr -d ' \n\r\t')
+        
+        echo "Cleaned SHEETS_KEY length: $(echo "$SHEETS_KEY" | wc -c)"
+        echo "Cleaned DRIVE_KEY length: $(echo "$DRIVE_KEY" | wc -c)"
+        
+        # Base64 디코딩 시도
+        echo "🔓 Decoding base64 strings..."
+        echo "$SHEETS_KEY" | base64 --decode > config/sheets-service-account.json || {
+          echo "❌ Failed to decode SHEETS_SERVICE_ACCOUNT_KEY"
+          echo "First 50 chars: $(echo "$SHEETS_KEY" | head -c 50)"
+          exit 1
+        }
+        
+        echo "$DRIVE_KEY" | base64 --decode > config/drive-service-account.json || {
+          echo "❌ Failed to decode DRIVE_SERVICE_ACCOUNT_KEY"
+          echo "First 50 chars: $(echo "$DRIVE_KEY" | head -c 50)"
+          exit 1
+        }
+        
         echo "✅ Google API credentials created successfully"
         ls -la config/
+        
+        # JSON 유효성 검사
+        echo "🔍 Validating JSON files..."
+        python -m json.tool config/sheets-service-account.json > /dev/null && echo "✅ Sheets JSON is valid"
+        python -m json.tool config/drive-service-account.json > /dev/null && echo "✅ Drive JSON is valid"
         
     - name: Set up environment variables
       run: |

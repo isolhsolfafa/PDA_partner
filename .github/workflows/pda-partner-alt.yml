@@ -1,0 +1,107 @@
+name: PDA Partner Automation (Alternative)
+
+on:
+  schedule:
+    - cron: '0 5 * * *'  # 매일 오후 2시 (KST)
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test Mode'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+      limit:
+        description: 'Limit'
+        required: true
+        default: '200'
+        type: choice
+        options:
+        - '1'
+        - '10'
+        - '50'
+        - '100'
+        - '200'
+      generate_graph:
+        description: 'Generate Graph'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+
+jobs:
+  run-pda-partner:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y fonts-nanum fonts-nanum-coding fonts-nanum-extra
+        
+    - name: Install Python dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+        
+    - name: Create Google API credentials (Direct JSON)
+      run: |
+        mkdir -p config
+        
+        # JSON을 직접 환경변수에서 가져와서 파일로 저장
+        echo '${{ secrets.SHEETS_SERVICE_ACCOUNT_JSON }}' > config/sheets-service-account.json
+        echo '${{ secrets.DRIVE_SERVICE_ACCOUNT_JSON }}' > config/drive-service-account.json
+        
+        echo "✅ Google API credentials created successfully"
+        ls -la config/
+        
+        # JSON 유효성 검사
+        echo "🔍 Validating JSON files..."
+        python -m json.tool config/sheets-service-account.json > /dev/null && echo "✅ Sheets JSON is valid"
+        python -m json.tool config/drive-service-account.json > /dev/null && echo "✅ Drive JSON is valid"
+        
+    - name: Set up environment variables
+      run: |
+        echo "SHEETS_KEY_PATH=./config/sheets-service-account.json" >> $GITHUB_ENV
+        echo "DRIVE_KEY_PATH=./config/drive-service-account.json" >> $GITHUB_ENV
+        echo "SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }}" >> $GITHUB_ENV
+        echo "EMAIL_ADDRESS=${{ secrets.EMAIL_ADDRESS }}" >> $GITHUB_ENV
+        echo "EMAIL_PASS=${{ secrets.EMAIL_PASS }}" >> $GITHUB_ENV
+        echo "RECEIVER_EMAIL=${{ secrets.RECEIVER_EMAIL }}" >> $GITHUB_ENV
+        echo "KAKAO_ACCESS_TOKEN=${{ secrets.KAKAO_ACCESS_TOKEN }}" >> $GITHUB_ENV
+        echo "KAKAO_REFRESH_TOKEN=${{ secrets.KAKAO_REFRESH_TOKEN }}" >> $GITHUB_ENV
+        echo "GH_TOKEN=${{ secrets.GH_TOKEN }}" >> $GITHUB_ENV
+        echo "GH_USERNAME=${{ secrets.GH_USERNAME }}" >> $GITHUB_ENV
+        echo "GH_REPO=${{ secrets.GH_REPO }}" >> $GITHUB_ENV
+        echo "TARGET_SHEET_NAME=${{ secrets.TARGET_SHEET_NAME }}" >> $GITHUB_ENV
+        echo "GH_UPLOAD=${{ secrets.GH_UPLOAD }}" >> $GITHUB_ENV
+        echo "TEST_MODE=${{ github.event.inputs.test_mode || 'false' }}" >> $GITHUB_ENV
+        echo "LIMIT=${{ github.event.inputs.limit || '200' }}" >> $GITHUB_ENV
+        echo "GENERATE_GRAPH=${{ github.event.inputs.generate_graph || 'true' }}" >> $GITHUB_ENV
+        
+    - name: Run PDA Partner
+      run: |
+        python PDA_partner.py
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: pda-partner-output
+        path: |
+          output/
+          *.log
+          partner.html
+        retention-days: 30 
