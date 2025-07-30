@@ -1496,10 +1496,10 @@ def send_occurrence_email(subject, body_text, graph_files=None, dashboard_file=N
 def cross_check_data_integrity(all_results):
     """
     기존 결과값들을 크로스 체크하여 데이터 정합성 확인
-    
+
     Args:
         all_results: 처리된 모든 결과 데이터
-        
+
     Returns:
         dict: 크로스 체크 결과 및 경고 메시지
     """
@@ -1512,20 +1512,20 @@ def cross_check_data_integrity(all_results):
             "total_ot_by_category": 0,
             "total_ot_by_partner": 0,
             "category_breakdown": {},
-            "partner_breakdown": {}
-        }
+            "partner_breakdown": {},
+        },
     }
-    
+
     # 카테고리별 총합 계산 (기존 방식)
     category_nan_total = 0
     category_ot_total = 0
     category_breakdown = {}
-    
+
     # 협력사별 총합 계산
     partner_nan_total = 0
     partner_ot_total = 0
     partner_breakdown = {"mech": 0, "elec": 0}
-    
+
     for result in all_results:
         (
             order_no,
@@ -1538,73 +1538,78 @@ def cross_check_data_integrity(all_results):
             _,
             _,
         ) = result
-        
+
         # 카테고리별 통계 집계
         for category, stats in occurrence_stats.items():
             nan_count = stats.get("nan_count", 0)
             ot_count = stats.get("ot_count", 0)
-            
+
             category_nan_total += nan_count
             category_ot_total += ot_count
-            
+
             if category not in category_breakdown:
                 category_breakdown[category] = {"nan": 0, "ot": 0}
             category_breakdown[category]["nan"] += nan_count
             category_breakdown[category]["ot"] += ot_count
-        
+
         # 협력사별 통계 집계
         for partner_type, stats in partner_stats.items():
             nan_count = stats.get("nan_count", 0)
             ot_count = stats.get("ot_count", 0)
-            
+
             partner_nan_total += nan_count
             partner_ot_total += ot_count
-            
+
             if partner_type in partner_breakdown:
                 partner_breakdown[partner_type] += nan_count
-    
+
     # 크로스 체크 1: 기구/전장 카테고리와 협력사 통계 비교
     mech_category_nan = category_breakdown.get("기구", {}).get("nan", 0)
     elec_category_nan = category_breakdown.get("전장", {}).get("nan", 0)
-    
+
     mech_partner_nan = partner_breakdown.get("mech", 0)
     elec_partner_nan = partner_breakdown.get("elec", 0)
-    
+
     if mech_category_nan != mech_partner_nan:
         check_report["warnings"].append(
             f"⚠️ 기구 NaN 불일치: 카테고리({mech_category_nan}) ≠ 협력사({mech_partner_nan})"
         )
-    
+
     if elec_category_nan != elec_partner_nan:
         check_report["warnings"].append(
             f"⚠️ 전장 NaN 불일치: 카테고리({elec_category_nan}) ≠ 협력사({elec_partner_nan})"
         )
-    
+
     # 크로스 체크 2: 카테고리별 주요 통계 확인
     major_categories = ["기구", "전장", "TMS_반제품"]
     for category in major_categories:
         if category in category_breakdown:
             nan_count = category_breakdown[category]["nan"]
-            total_count = sum(stats.get("total_count", 0) for result in all_results for stats in [result[4].get(category, {})])
-            
+            total_count = sum(
+                stats.get("total_count", 0) for result in all_results for stats in [result[4].get(category, {})]
+            )
+
             if total_count > 0:
                 nan_ratio = (nan_count / total_count) * 100
                 if nan_ratio > 80:  # 80% 이상이면 경고
                     check_report["warnings"].append(
                         f"⚠️ {category} NaN 비율 높음: {nan_ratio:.1f}% ({nan_count}/{total_count})"
                     )
-    
+
     # 크로스 체크 3: 전체 모델 수와 실제 처리된 데이터 수 비교
-    processed_models = len([r for r in all_results if any(
-        stats.get("nan_count", 0) > 0 or stats.get("ot_count", 0) > 0 
-        for stats in r[4].values()
-    )])
-    
+    processed_models = len(
+        [
+            r
+            for r in all_results
+            if any(stats.get("nan_count", 0) > 0 or stats.get("ot_count", 0) > 0 for stats in r[4].values())
+        ]
+    )
+
     if processed_models != len(all_results):
         check_report["warnings"].append(
             f"ℹ️ 처리된 모델: {processed_models}/{len(all_results)} (정상 범위 내 모델 제외)"
         )
-    
+
     # 요약 정보 업데이트
     check_report["summary"]["total_nan_by_category"] = category_nan_total
     check_report["summary"]["total_nan_by_partner"] = partner_nan_total
@@ -1612,7 +1617,7 @@ def cross_check_data_integrity(all_results):
     check_report["summary"]["total_ot_by_partner"] = partner_ot_total
     check_report["summary"]["category_breakdown"] = category_breakdown
     check_report["summary"]["partner_breakdown"] = partner_breakdown
-    
+
     return check_report
 
 
@@ -1620,11 +1625,11 @@ def send_nan_alert_to_kakao(all_results):
     if not all_results:
         print("⚠️ [알림] 전송할 데이터가 없습니다.")
         return
-    
+
     # 기존 결과값들을 크로스 체크
     print("🔍 기존 결과값 크로스 체크 중...")
     check_report = cross_check_data_integrity(all_results)
-    
+
     # 크로스 체크 결과 출력
     if check_report["warnings"]:
         print("⚠️ 데이터 크로스 체크 결과:")
@@ -1632,31 +1637,31 @@ def send_nan_alert_to_kakao(all_results):
             print(f"  {warning}")
     else:
         print("✅ 데이터 크로스 체크 통과")
-    
+
     # 기존 방식으로 총합 계산 (검증된 값 사용)
     total_nan = check_report["summary"]["total_nan_by_category"]
     total_ot = check_report["summary"]["total_ot_by_category"]
-    
+
     # 기존 방식과 비교 (디버깅용)
     original_nan = sum(stats["nan_count"] for result in all_results for stats in result[4].values())
     original_ot = sum(stats["ot_count"] for result in all_results for stats in result[4].values())
-    
+
     if total_nan != original_nan or total_ot != original_ot:
         print(f"⚠️ 계산 방식 차이 발견: NaN({total_nan}vs{original_nan}), OT({total_ot}vs{original_ot})")
         # 기존 방식 사용 (안전)
         total_nan = original_nan
         total_ot = original_ot
-    
+
     kst = pytz.timezone("Asia/Seoul")
     execution_time = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
-    
+
     # 카카오톡 메시지 구성
     text = f"📢 PDA Overtime 및 NaN 체크 결과\n📅 실행 시간: {execution_time} (KST)\n📊 총 {len(all_results)}건 처리\n⚠️ 누락(NaN): {total_nan} 건\n⏳ 오버타임: {total_ot} 건"
-    
+
     # 크로스 체크 경고가 있는 경우 추가 정보
     if check_report["warnings"]:
         text += f"\n🔍 데이터 체크: {len(check_report['warnings'])}건 확인 필요"
-    
+
     # 주요 카테고리 요약 추가
     category_summary = []
     for category in ["기구", "전장", "TMS_반제품"]:
@@ -1664,20 +1669,20 @@ def send_nan_alert_to_kakao(all_results):
             nan_count = check_report["summary"]["category_breakdown"][category]["nan"]
             if nan_count > 0:
                 category_summary.append(f"{category}: {nan_count}건")
-    
+
     if category_summary:
         text += f"\n📋 주요 누락: {', '.join(category_summary)}"
-    
+
     text += "\n👇 대시보드에서 상세 내용 확인하세요!"
-    
+
     # 메시지 전송
     access_token = refresh_access_token()
     if not access_token:
         print("❌ [카카오톡 발송 실패] 액세스 토큰이 없어 메시지 발송 불가.")
         return
-    
+
     success = send_kakao_message(text, access_token)
-    
+
     if success:
         print("✅ 크로스 체크 완료 및 카카오톡 메시지 전송 성공!")
         print(f"📊 검증된 통계: NaN {total_nan}건, OT {total_ot}건")
@@ -1709,7 +1714,6 @@ def refresh_access_token():
 def send_kakao_message(text, access_token=None):
     if access_token is None:
         try:
-            global KAKAO_ACCESS_TOKEN
             access_token = KAKAO_ACCESS_TOKEN
         except NameError:
             print("❌ [오류] KAKAO_ACCESS_TOKEN이 정의되지 않았습니다.")
