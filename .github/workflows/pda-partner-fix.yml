@@ -11,7 +11,7 @@ on:
       limit:
         description: 'Row limit for processing'
         required: false
-        default: '50'
+        default: '1'
         type: string
       generate_graph:
         description: 'Generate graphs (true/false)'
@@ -145,7 +145,7 @@ jobs:
       run: |
         echo "🚀 Running main PDA partner script..."
         echo "📊 Test mode: ${{ github.event.inputs.test_mode || 'false' }}"
-        echo "📏 Row limit: ${{ github.event.inputs.limit || '50' }}"
+        echo "📏 Row limit: ${{ github.event.inputs.limit || '1' }}"
         echo "📈 Generate graph: ${{ github.event.inputs.generate_graph || 'false' }}"
         
         # Build command with options
@@ -156,9 +156,9 @@ jobs:
           echo "🧪 TEST MODE enabled"
         fi
         
-        if [ "${{ github.event.inputs.limit || '50' }}" != "50" ]; then
-          CMD="$CMD --limit ${{ github.event.inputs.limit || '50' }}"
-          echo "📏 Row limit set to: ${{ github.event.inputs.limit || '50' }}"
+        if [ "${{ github.event.inputs.limit || '1' }}" != "1" ]; then
+          CMD="$CMD --limit ${{ github.event.inputs.limit || '1' }}"
+          echo "📏 Row limit set to: ${{ github.event.inputs.limit || '1' }}"
         fi
         
         if [ "${{ github.event.inputs.generate_graph || 'false' }}" = "true" ]; then
