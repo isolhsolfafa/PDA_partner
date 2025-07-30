@@ -69,13 +69,16 @@ EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS") or os.getenv("SMTP_USER")
 EMAIL_PASS = os.getenv("EMAIL_PASS") or os.getenv("SMTP_PASSWORD")
 RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL")
 
-# 필수 환경변수 검증
-if not EMAIL_ADDRESS or not EMAIL_PASS or not RECEIVER_EMAIL:
-    print(f"❌ 이메일 설정 확인:")
+# 이메일 설정 검증 (선택사항)
+email_configured = EMAIL_ADDRESS and EMAIL_PASS and RECEIVER_EMAIL
+if not email_configured:
+    print(f"⚠️ 이메일 설정 확인 (선택사항):")
     print(f"   EMAIL_ADDRESS/SMTP_USER: {'✅' if EMAIL_ADDRESS else '❌'}")
     print(f"   EMAIL_PASS/SMTP_PASSWORD: {'✅' if EMAIL_PASS else '❌'}")
     print(f"   RECEIVER_EMAIL: {'✅' if RECEIVER_EMAIL else '❌'}")
-    raise ValueError("이메일 관련 환경변수가 설정되지 않았습니다")
+    print(f"   📧 이메일 기능이 비활성화됩니다.")
+else:
+    print(f"✅ 이메일 설정이 완료되었습니다.")
 
 # Sheet Range Settings
 WORKSHEET_RANGE = os.getenv("WORKSHEET_RANGE", "'WORKSHEET'!A1:Z100")
@@ -1458,6 +1461,12 @@ def build_combined_email_body(
 
 
 def send_occurrence_email(subject, body_text, graph_files=None, dashboard_file=None):
+    # 이메일 설정이 없으면 건너뛰기
+    if not email_configured:
+        print(f"⚠️ 이메일 설정이 없어 이메일 전송을 건너뜁니다.")
+        print(f"📧 제목: {subject}")
+        return
+        
     context = ssl.create_default_context()
     msg = MIMEMultipart("mixed")
     msg["From"] = EMAIL_ADDRESS

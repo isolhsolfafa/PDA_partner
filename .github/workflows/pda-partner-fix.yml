@@ -129,6 +129,21 @@ jobs:
       run: |
         echo "🚀 Running main PDA partner script..."
         python PDA_partner.py
+      env:
+        # Service account keys
+        SHEETS_SERVICE_ACCOUNT_KEY: ${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}
+        DRIVE_SERVICE_ACCOUNT_KEY: ${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}
+        
+        # Email configuration
+        EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+        EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+        RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
+        SMTP_USER: ${{ secrets.EMAIL_ADDRESS }}
+        SMTP_PASSWORD: ${{ secrets.EMAIL_PASS }}
+        
+        # Other environment variables
+        NOVA_FOLDER_ID: ${{ secrets.NOVA_FOLDER_ID }}
+        JSON_DRIVE_FOLDER_ID: ${{ secrets.JSON_DRIVE_FOLDER_ID }}
         
     - name: Upload results
       uses: actions/upload-artifact@v4
