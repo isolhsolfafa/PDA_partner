@@ -182,6 +182,10 @@ jobs:
         SMTP_USER: ${{ secrets.EMAIL_ADDRESS }}
         SMTP_PASSWORD: ${{ secrets.EMAIL_PASS }}
         
+        # Service account key file paths
+        SHEETS_KEY_PATH: config/sheets-service-account.json
+        DRIVE_KEY_PATH: config/drive-service-account.json
+        
         # Other environment variables
         NOVA_FOLDER_ID: ${{ secrets.NOVA_FOLDER_ID }}
         JSON_DRIVE_FOLDER_ID: ${{ secrets.JSON_DRIVE_FOLDER_ID }}
