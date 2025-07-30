@@ -12,7 +12,7 @@ from googleapiclient.errors import HttpError
 from .settings import WORKSHEET_RANGE, logger
 
 
-@on_exception(expo, HttpError, max_tries=8, max_time=120, giveup=lambda e: e.response.status_code not in [429, 503])
+@on_exception(expo, HttpError, max_tries=8, max_time=120, giveup=lambda e: getattr(e, "response", None) and e.response.status_code not in [429, 503])  # type: ignore
 def api_call_with_backoff(func, *args, **kwargs):
     """API 호출에 대한 지수 백오프 재시도 데코레이터"""
     try:

@@ -138,7 +138,7 @@ plt.rcParams["axes.unicode_minus"] = False
 
 
 # 백오프 데코레이터 설정
-@on_exception(expo, HttpError, max_tries=8, max_time=120, giveup=lambda e: e.response.status_code not in [429, 503])
+@on_exception(expo, HttpError, max_tries=8, max_time=120, giveup=lambda e: getattr(e, "response", None) and e.response.status_code not in [429, 503])  # type: ignore
 def api_call_with_backoff(func, *args, **kwargs):
     try:
         return func(*args, **kwargs)

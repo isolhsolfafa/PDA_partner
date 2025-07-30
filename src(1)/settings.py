@@ -149,7 +149,7 @@ DEFAULT_TASKS = {
         "판넬 작업",
         "탱크 도킹 후 결선 작업",
     ],
-    "INSPECTION": ["LNG/Util", "Chamber", "I/O 체크, 가동 검사, 전장 마무리"],
+    "INSPECTION": ["LNG/Util", "Chamber", "I/O 체크, 가동 검사, 전장 마무리", "LNG"],
     "FINISHING": ["캐비넷 커버 장착", "상부 마무리", "HOOK-UP 준비 및 포장"],
 }
 
