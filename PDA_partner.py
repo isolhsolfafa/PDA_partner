@@ -56,12 +56,8 @@ os.environ["SSL_CERT_FILE"] = certifi.where()
 
 # Global Variables - 보안 개선: 환경변수 사용
 TEST_MODE = os.getenv("TEST_MODE", "True").lower() == "true"
-DRIVE_FOLDER_ID = os.getenv(
-    "DRIVE_FOLDER_ID", "1Gylm36vhtrl_yCHurZYGgeMlt5U0CliE"
-)  # 최종 리포트(HTML), 그래프 등 저장용
-JSON_DRIVE_FOLDER_ID = os.getenv(
-    "JSON_DRIVE_FOLDER_ID", os.getenv("NOVA_FOLDER_ID", "13FdsniLHb4qKmn5M4-75H8SvgEyW2Ck1")
-)  # JSON 데이터 저장용
+DRIVE_FOLDER_ID = os.getenv("DRIVE_FOLDER_ID", "1Gylm36vhtrl_yCHurZYGgeMlt5U0CliE")  # 최종 리포트(HTML), 그래프 등 저장용
+JSON_DRIVE_FOLDER_ID = os.getenv("JSON_DRIVE_FOLDER_ID", "13FdsniLHb4qKmn5M4-75H8SvgEyW2Ck1")  # JSON 데이터 저장용
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 # 이메일 설정 - 기존 .env 파일 호환성 지원
@@ -87,8 +83,8 @@ INFO_RANGE = os.getenv("INFO_RANGE", "정보판!A1:Z100")
 # API 키들 - 환경변수에서 로드
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 REST_API_KEY = os.getenv("KAKAO_REST_API_KEY")
-KAKAO_ACCESS_TOKEN = os.getenv("KAKAO_ACCESS_TOKEN", "3hkKQcxD_S63RunpV7Gpisb4mOVhDQvaAAAAAQoXEG8AAAGYTix4s8Len3w93lOl")
-REFRESH_TOKEN = os.getenv("KAKAO_REFRESH_TOKEN", "atOsmHAOivQL5HtE-0XDm06bAE2rJfCWAAAAAgoXEG8AAAGYTix4q8Len3w93lOl")
+KAKAO_ACCESS_TOKEN = os.getenv("KAKAO_ACCESS_TOKEN")
+REFRESH_TOKEN = os.getenv("KAKAO_REFRESH_TOKEN")
 
 if not GITHUB_TOKEN or not REST_API_KEY:
     print("⚠️ 일부 API 키가 설정되지 않았습니다. 해당 기능이 제한될 수 있습니다.")
@@ -1173,7 +1169,7 @@ def build_combined_email_body(
     kst = pytz.timezone("Asia/Seoul")
     execution_time = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
     year, week_num, _ = date.today().isocalendar()
-    dashboard_link = "https://gst-factory.netlify.app"
+    dashboard_link = os.getenv("DASHBOARD_URL", "https://gst-factory.netlify.app")
 
     # 고유 값 수집 (필터 드롭다운용)
     unique_values = {
@@ -1252,7 +1248,7 @@ def build_combined_email_body(
 
         # 재업로드가 실패했거나 파일이 없으면 최신 Drive 링크 사용
         if not monthly_partner_url:
-            monthly_partner_url = "https://drive.google.com/uc?export=view&id=1Bh1iUvPIQfsQ_wUTs_DOln0cZGY_hHL7"
+            monthly_partner_url = os.getenv("MONTHLY_PARTNER_HEATMAP_URL", "https://drive.google.com/uc?export=view&id=1Bh1iUvPIQfsQ_wUTs_DOln0cZGY_hHL7")
 
     if not monthly_model_url:
         # 먼저 최신 로컬 파일이 있는지 확인하고 재업로드, 없으면 최신 Drive 링크 사용
@@ -1265,7 +1261,7 @@ def build_combined_email_body(
 
         # 재업로드가 실패했거나 파일이 없으면 최신 Drive 링크 사용
         if not monthly_model_url:
-            monthly_model_url = "https://drive.google.com/uc?export=view&id=1DGOJCR5Ie5VGgMMcgIEQc0D45z8-uuIG"
+            monthly_model_url = os.getenv("MONTHLY_MODEL_HEATMAP_URL", "https://drive.google.com/uc?export=view&id=1DGOJCR5Ie5VGgMMcgIEQc0D45z8-uuIG")
 
     # 링크가 있는 경우에만 추가
     if monthly_partner_url:

@@ -1,33 +1,26 @@
-name: PDA Partner Automation
+name: PDA Partner Daily Run
 
 on:
   schedule:
-    # 매일 오후 2시 (KST 기준)
-    - cron: '0 5 * * *'  # UTC 오전 5시 = KST 오후 2시
-  workflow_dispatch:  # 수동 실행 가능
+    # 매일 오후 2시 (KST) = UTC 오전 5시
+    - cron: '0 5 * * *'
+  workflow_dispatch:
     inputs:
-      test_mode:
-        description: 'Test Mode (true/false)'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-        - 'true'
-        - 'false'
       limit:
-        description: 'Process Limit (number of spreadsheets)'
+        description: '처리할 항목 수 (기본값: 200)'
         required: false
-        default: '1'
+        default: '200'
         type: string
       generate_graphs:
-        description: 'Generate Graphs (auto/true/false)'
+        description: '그래프 생성 (true/false)'
         required: false
-        default: 'auto'
-        type: choice
-        options:
-        - 'auto'
-        - 'true'
-        - 'false'
+        default: false
+        type: boolean
+      github_upload:
+        description: 'GitHub 업로드 (true/false)'
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   run-pda-partner:
@@ -49,185 +42,85 @@ jobs:
         
     - name: Install Python dependencies
       run: |
-        python -m pip install --upgrade pip
+        pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Run code quality checks
-      run: |
-        pip install black flake8 isort
-        black --check --diff . || echo "⚠️ Black formatting issues found (continuing...)"
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || echo "⚠️ Critical flake8 issues found (continuing...)"
-        isort --check-only --diff . || echo "⚠️ Import sorting issues found (continuing...)"
-        
-    - name: Create Google API credentials
+    - name: Create Google service account keys
       run: |
         mkdir -p config
         
-        # 환경변수로 안전하게 처리
-        echo "🔍 Processing SHEETS_SERVICE_ACCOUNT_KEY..."
-        echo "$SHEETS_KEY" | tr -d ' \n\r\t' > /tmp/sheets_b64_clean.txt
-        echo "Cleaned Base64 length: $(wc -c < /tmp/sheets_b64_clean.txt)"
+        # Sheets 서비스 계정 키 생성
+        echo "${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}" | base64 --decode > config/gst-manegemnet-70faf8ce1bff.json
         
-        echo "🔍 Processing DRIVE_SERVICE_ACCOUNT_KEY..."
-        echo "$DRIVE_KEY" | tr -d ' \n\r\t' > /tmp/drive_b64_clean.txt
-        echo "Cleaned Base64 length: $(wc -c < /tmp/drive_b64_clean.txt)"
+        # Drive 서비스 계정 키 생성  
+        echo "${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}" | base64 --decode > config/gst-manegemnet-ab8788a05cff.json
         
-        # Base64 디코딩
-        echo "🔓 Decoding base64 strings..."
-        base64 -d /tmp/sheets_b64_clean.txt > /tmp/sheets_raw.json 2>/dev/null || {
-          echo "❌ Failed to decode SHEETS_SERVICE_ACCOUNT_KEY"
-          exit 1
-        }
-        
-        base64 -d /tmp/drive_b64_clean.txt > /tmp/drive_raw.json 2>/dev/null || {
-          echo "❌ Failed to decode DRIVE_SERVICE_ACCOUNT_KEY"
-          exit 1
-        }
-        
-        # JSON 수정 스크립트 생성
-        echo "🔧 Creating JSON fix script..."
-        cat > /tmp/fix_json.py << 'EOF'
-        import json
-        import sys
-        import re
-        
-        def fix_json_file(input_file, output_file):
-            try:
-                with open(input_file, 'r') as f:
-                    content = f.read()
-                
-                # private_key 필드의 실제 줄바꿈을 \\n으로 변환
-                # 정규식으로 private_key 내용 찾기
-                pattern = r'"private_key":\s*"([^"]+)"'
-                match = re.search(pattern, content, re.DOTALL)
-                
-                if match:
-                    private_key = match.group(1)
-                    # 실제 줄바꿈을 \\n으로 변환
-                    fixed_private_key = private_key.replace('\n', '\\n')
-                    content = content.replace(match.group(1), fixed_private_key)
-                
-                # JSON 파싱 테스트
-                data = json.loads(content)
-                
-                # 파일 저장
-                with open(output_file, 'w') as f:
-                    json.dump(data, f, indent=2)
-                
-                return True
-                
-            except Exception as e:
-                print(f"Error fixing JSON: {e}")
-                return False
-        
-        if __name__ == "__main__":
-            input_file = sys.argv[1]
-            output_file = sys.argv[2]
-            
-            if fix_json_file(input_file, output_file):
-                print(f"✅ JSON fixed and saved: {output_file}")
-            else:
-                print(f"❌ Failed to fix JSON: {input_file}")
-                # 원본 그대로 복사
-                import shutil
-                shutil.copy(input_file, output_file)
-                sys.exit(1)
-        EOF
-        
-        # JSON 파일 수정
-        echo "🔧 Fixing JSON files..."
-        python /tmp/fix_json.py /tmp/sheets_raw.json config/sheets-service-account.json
-        python /tmp/fix_json.py /tmp/drive_raw.json config/drive-service-account.json
-        
-        # 결과 확인
-        echo "✅ Files created:"
-        ls -la config/
-        
-        echo "🔍 File sizes:"
-        wc -c config/*.json
-        
-        # JSON 유효성 검사
-        echo "🔍 Final validation..."
-        
-        if python -c "import json; json.load(open('config/sheets-service-account.json'))" 2>/dev/null; then
-          echo "✅ Sheets JSON is valid"
+        # 파일 생성 확인
+        if [ -f "config/gst-manegemnet-70faf8ce1bff.json" ]; then
+          echo "✅ Sheets 키 파일 생성 완료"
         else
-          echo "❌ Sheets JSON is still invalid"
-          head -c 200 config/sheets-service-account.json
+          echo "❌ Sheets 키 파일 생성 실패"
           exit 1
         fi
         
-        if python -c "import json; json.load(open('config/drive-service-account.json'))" 2>/dev/null; then
-          echo "✅ Drive JSON is valid"
+        if [ -f "config/gst-manegemnet-ab8788a05cff.json" ]; then
+          echo "✅ Drive 키 파일 생성 완료"
         else
-          echo "❌ Drive JSON is still invalid"
-          head -c 200 config/drive-service-account.json
+          echo "❌ Drive 키 파일 생성 실패"
           exit 1
-        fi
-        
-        # 임시 파일 정리
-        rm -f /tmp/sheets_b64_clean.txt /tmp/drive_b64_clean.txt /tmp/sheets_raw.json /tmp/drive_raw.json /tmp/fix_json.py
-        
-      env:
-        SHEETS_KEY: ${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}
-        DRIVE_KEY: ${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}
-        
-    - name: Set up environment variables
-      run: |
-        echo "SHEETS_KEY_PATH=./config/sheets-service-account.json" >> $GITHUB_ENV
-        echo "DRIVE_KEY_PATH=./config/drive-service-account.json" >> $GITHUB_ENV
-        echo "SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }}" >> $GITHUB_ENV
-        echo "EMAIL_ADDRESS=${{ secrets.EMAIL_ADDRESS }}" >> $GITHUB_ENV
-        echo "EMAIL_PASS=${{ secrets.EMAIL_PASS }}" >> $GITHUB_ENV
-        echo "RECEIVER_EMAIL=${{ secrets.RECEIVER_EMAIL }}" >> $GITHUB_ENV
-        echo "KAKAO_REST_API_KEY=${{ secrets.KAKAO_REST_API_KEY }}" >> $GITHUB_ENV
-        echo "KAKAO_ACCESS_TOKEN=${{ secrets.KAKAO_ACCESS_TOKEN }}" >> $GITHUB_ENV
-        echo "KAKAO_REFRESH_TOKEN=${{ secrets.KAKAO_REFRESH_TOKEN }}" >> $GITHUB_ENV
-        echo "GITHUB_TOKEN=${{ secrets.GH_TOKEN }}" >> $GITHUB_ENV
-        echo "GITHUB_USERNAME=${{ secrets.GH_USERNAME }}" >> $GITHUB_ENV
-        echo "GITHUB_REPO=${{ secrets.GH_REPO }}" >> $GITHUB_ENV
-        echo "DRIVE_FOLDER_ID=${{ secrets.DRIVE_FOLDER_ID }}" >> $GITHUB_ENV
-        echo "JSON_DRIVE_FOLDER_ID=${{ secrets.JSON_DRIVE_FOLDER_ID }}" >> $GITHUB_ENV
-        echo "TARGET_SHEET_NAME=${{ secrets.TARGET_SHEET_NAME }}" >> $GITHUB_ENV
-        echo "GITHUB_UPLOAD=${{ secrets.GH_UPLOAD }}" >> $GITHUB_ENV
-        
-        # 워크플로우 입력값 처리
-        if [ "${{ github.event.inputs.test_mode }}" != "" ]; then
-          echo "TEST_MODE=${{ github.event.inputs.test_mode }}" >> $GITHUB_ENV
-        else
-          echo "TEST_MODE=false" >> $GITHUB_ENV
-        fi
-        
-        if [ "${{ github.event.inputs.limit }}" != "" ]; then
-          echo "LIMIT=${{ github.event.inputs.limit }}" >> $GITHUB_ENV
-        else
-          echo "LIMIT=1" >> $GITHUB_ENV
-        fi
-        
-        if [ "${{ github.event.inputs.generate_graphs }}" != "" ]; then
-          echo "GENERATE_GRAPHS=${{ github.event.inputs.generate_graphs }}" >> $GITHUB_ENV
-        else
-          echo "GENERATE_GRAPHS=auto" >> $GITHUB_ENV
         fi
         
     - name: Run PDA Partner
       run: |
+        echo "🚀 PDA Partner 실행 시작..."
+        
+        # 환경변수 설정
+        export SPREADSHEET_ID="${{ secrets.SPREADSHEET_ID }}"
+        export TARGET_SHEET_NAME="${{ secrets.TARGET_SHEET_NAME }}"
+        export DRIVE_FOLDER_ID="${{ secrets.DRIVE_FOLDER_ID }}"
+        export JSON_DRIVE_FOLDER_ID="${{ secrets.JSON_DRIVE_FOLDER_ID }}"
+        export GITHUB_TOKEN="${{ secrets.GH_TOKEN }}"
+        export GITHUB_USERNAME="${{ secrets.GH_USERNAME }}"
+        export GITHUB_REPO="${{ secrets.GH_REPO }}"
+        export GITHUB_BRANCH="${{ secrets.GH_BRANCH }}"
+        export KAKAO_REST_API_KEY="${{ secrets.KAKAO_REST_API_KEY }}"
+        export KAKAO_ACCESS_TOKEN="${{ secrets.KAKAO_ACCESS_TOKEN }}"
+        export KAKAO_REFRESH_TOKEN="${{ secrets.KAKAO_REFRESH_TOKEN }}"
+        export EMAIL_ADDRESS="${{ secrets.EMAIL_ADDRESS }}"
+        export EMAIL_PASS="${{ secrets.EMAIL_PASS }}"
+        export RECEIVER_EMAIL="${{ secrets.RECEIVER_EMAIL }}"
+        export SHEETS_KEY_PATH="config/gst-manegemnet-70faf8ce1bff.json"
+        export DRIVE_KEY_PATH="config/gst-manegemnet-ab8788a05cff.json"
+        
+        # 입력값 처리
+        if [ "${{ github.event.inputs.limit }}" != "" ]; then
+          export LIMIT="${{ github.event.inputs.limit }}"
+        else
+          export LIMIT="200"
+        fi
+        
+        if [ "${{ github.event.inputs.generate_graphs }}" == "true" ]; then
+          export GENERATE_GRAPHS="true"
+        else
+          export GENERATE_GRAPHS="auto"
+        fi
+        
+        if [ "${{ github.event.inputs.github_upload }}" == "true" ]; then
+          export GITHUB_UPLOAD="true"
+        else
+          export GITHUB_UPLOAD="false"
+        fi
+        
+        # 실행
         python PDA_partner.py
         
     - name: Upload artifacts
-      if: always()
       uses: actions/upload-artifact@v4
+      if: always()
       with:
-        name: pda-partner-outputs
+        name: pda-partner-results-${{ github.run_number }}
         path: |
           output/
           *.html
-          *.png
           *.log
-        retention-days: 7
-        
-    - name: Cleanup credentials
-      if: always()
-      run: |
-        rm -f config/sheets-service-account.json
-        rm -f config/drive-service-account.json 
+        retention-days: 7 
