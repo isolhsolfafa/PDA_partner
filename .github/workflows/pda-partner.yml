@@ -62,8 +62,10 @@ jobs:
     - name: Create Google API credentials
       run: |
         mkdir -p config
-        echo '${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}' | base64 -d > config/sheets-service-account.json
-        echo '${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}' | base64 -d > config/drive-service-account.json
+        echo "${{ secrets.SHEETS_SERVICE_ACCOUNT_KEY }}" | base64 --decode > config/sheets-service-account.json
+        echo "${{ secrets.DRIVE_SERVICE_ACCOUNT_KEY }}" | base64 --decode > config/drive-service-account.json
+        echo "✅ Google API credentials created successfully"
+        ls -la config/
         
     - name: Set up environment variables
       run: |
