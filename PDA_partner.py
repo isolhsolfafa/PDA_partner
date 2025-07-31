@@ -164,13 +164,16 @@ else:
 plt.rcParams["axes.unicode_minus"] = False
 
 
-# 백오프 데코레이터 설정
-@on_exception(expo, HttpError, max_tries=8, max_time=120, giveup=lambda e: getattr(e, "response", None) and e.response.status_code not in [429, 503])  # type: ignore
+# 백오프 데코레이터 설정 - 429 (Rate Limit) 에러도 재시도하도록 수정
+@on_exception(expo, HttpError, max_tries=10, max_time=300, giveup=lambda e: getattr(e, "response", None) and e.response.status_code not in [429, 503, 500, 502, 504])  # type: ignore
 def api_call_with_backoff(func, *args, **kwargs):
     try:
         return func(*args, **kwargs)
     except HttpError as e:
-        print(f"⚠️ [Retrying] API 호출 실패: {e}")
+        if getattr(e, "response", None) and e.response.status_code == 429:
+            print(f"⚠️ [Rate Limit] API 할당량 초과, 백오프 재시도: {e}")
+        else:
+            print(f"⚠️ [Retrying] API 호출 실패: {e}")
         raise
 
 
@@ -302,14 +305,22 @@ def get_order_no(spreadsheet_id):
 
 
 def get_linked_spreadsheet_ids(spreadsheet_id):
-    """하이퍼링크에서 스프레드시트 ID 추출"""
+    """하이퍼링크에서 스프레드시트 ID 추출 (Rate Limit 방지)"""
+    import time
+    
     pmmd_hyperlink_range = f"'{TARGET_SHEET_NAME}'!A:A"
+    print(f"🔍 스프레드시트 ID 추출 중... (Rate Limit 방지를 위해 천천히 진행)")
+    
+    # Rate Limit 방지를 위한 지연
+    time.sleep(2)
+    
     result = api_call_with_backoff(
         sheets_service.spreadsheets().values().get,
         spreadsheetId=spreadsheet_id,
         range=pmmd_hyperlink_range,
         valueRenderOption="FORMULA",
     ).execute()
+    
     formulas = result.get("values", [])
     linked_spreadsheet_ids = [
         re.search(r"/d/([a-zA-Z0-9-_]+)", cell).group(1)
@@ -317,7 +328,8 @@ def get_linked_spreadsheet_ids(spreadsheet_id):
         for cell in row
         if cell.startswith("=HYPERLINK(")
     ]
-    print("추출된 스프레드시트 ID들:", linked_spreadsheet_ids)
+    
+    print(f"추출된 스프레드시트 ID들: {linked_spreadsheet_ids[:5]}{'...' if len(linked_spreadsheet_ids) > 5 else ''} (총 {len(linked_spreadsheet_ids)}개)")
     return linked_spreadsheet_ids
 
 
@@ -1872,9 +1884,16 @@ def collect_and_process_data():
     print(f"📊 그래프 생성 설정: GENERATE_GRAPHS={GENERATE_GRAPHS}, 실제 생성 여부: {generate_graphs_today}")
 
     def process_batch(batch_ids):
+        import time
         for idx, target_spreadsheet_id in enumerate(batch_ids, 1):
             try:
                 print(f"--- 🚀 처리 중: {idx}/{len(batch_ids)} (Batch) ---")
+                
+                # Rate Limit 방지를 위한 지연 (첫 번째가 아닌 경우)
+                if idx > 1:
+                    print("⏱️ Rate Limit 방지를 위해 3초 대기...")
+                    time.sleep(3)
+                
                 df = fetch_data_from_sheets(target_spreadsheet_id, WORKSHEET_RANGE)
                 product_name, mech_partner, elec_partner = fetch_info_board_extended(target_spreadsheet_id)
                 print(f"📌 Processing Model: {product_name}")
