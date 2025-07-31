@@ -121,18 +121,42 @@ except Exception as e:
 
 # Font Setting
 font_paths = [
+    # macOS 경로들
     "/Users/kdkyu311/Library/Fonts/NanumGothic.ttf",
     "/System/Library/AssetsV2/com_apple_MobileAsset_Font7/bad9b4bf17cf1669dde54184ba4431c22dcad27b.asset/AssetData/NanumGothic.ttc",
     "/Library/Fonts/NanumGothic.ttf",
     "/System/Library/Fonts/Supplemental/NanumGothic.ttf",
+    # Ubuntu/Linux 경로들 (GitHub Actions용)
+    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+    "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf",
+    "/usr/share/fonts/truetype/nanum/NanumBarunGothic.ttf",
+    "/usr/share/fonts/opentype/nanum/NanumGothic.ttf",
+    # 일반적인 Linux 시스템 경로들
+    "/usr/share/fonts/TTF/NanumGothic.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",  # 대체 폰트
 ]
 font_path = next((path for path in font_paths if os.path.exists(path)), None)
+
 if font_path:
     print(f"✅ NanumGothic 폰트 적용 완료: {font_path}")
     font_prop = fm.FontProperties(fname=font_path)
     plt.rc("font", family=font_prop.get_name())
 else:
-    print("🚨 NanumGothic 폰트를 찾을 수 없습니다. 기본 폰트로 진행합니다.")
+    # 시스템에서 설치된 한글 폰트를 동적으로 찾기
+    print("🔍 시스템에서 한글 폰트를 검색 중...")
+    available_fonts = [f.name for f in fm.fontManager.ttflist]
+    korean_fonts = [font for font in available_fonts if any(keyword in font.lower() for keyword in ['nanum', 'malgun', 'dotum', 'gulim', 'batang'])]
+    
+    if korean_fonts:
+        selected_font = korean_fonts[0]
+        print(f"✅ 한글 폰트 발견 및 적용: {selected_font}")
+        font_prop = fm.FontProperties(family=selected_font)
+        plt.rc("font", family=selected_font)
+    else:
+        print("🚨 한글 폰트를 찾을 수 없습니다. 기본 폰트로 진행합니다.")
+        font_prop = None
+
+# 마이너스 기호 깨짐 방지
 plt.rcParams["axes.unicode_minus"] = False
 
 
