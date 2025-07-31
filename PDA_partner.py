@@ -58,6 +58,10 @@ os.environ["SSL_CERT_FILE"] = certifi.where()
 TEST_MODE = os.getenv("TEST_MODE", "True").lower() == "true"
 DRIVE_FOLDER_ID = os.getenv("DRIVE_FOLDER_ID", "1Gylm36vhtrl_yCHurZYGgeMlt5U0CliE")  # 최종 리포트(HTML), 그래프 등 저장용
 JSON_DRIVE_FOLDER_ID = os.getenv("JSON_DRIVE_FOLDER_ID", "13FdsniLHb4qKmn5M4-75H8SvgEyW2Ck1")  # JSON 데이터 저장용
+
+# 환경변수 디버깅 로그
+print(f"🔍 [DEBUG] DRIVE_FOLDER_ID 환경변수: '{DRIVE_FOLDER_ID}'")
+print(f"🔍 [DEBUG] JSON_DRIVE_FOLDER_ID 환경변수: '{JSON_DRIVE_FOLDER_ID}'")
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 # 이메일 설정 - 기존 .env 파일 호환성 지원
@@ -236,7 +240,7 @@ def generate_html_from_content(html_content, output_filename="index.html"):
         return None, None
 
 
-def upload_to_drive(file_path):
+def upload_to_drive(file_path, drive_service_param=None):
     import os
 
     from googleapiclient.http import MediaFileUpload
@@ -244,19 +248,34 @@ def upload_to_drive(file_path):
     try:
         # 파일명만 추출 (경로 제거)
         file_name = os.path.basename(file_path)
-        file_metadata = {"name": file_name, "parents": [folder_id]}
+        
+        # 전역 변수 가져오기
+        global DRIVE_FOLDER_ID, drive_service
+        
+        print(f"🔍 [DEBUG] Drive 업로드 시도 - 파일: {file_name}, 폴더 ID: {DRIVE_FOLDER_ID}")
+        
+        # 폴더 ID 검증
+        if not DRIVE_FOLDER_ID or DRIVE_FOLDER_ID.strip() == "":
+            print(f"❌ [Drive 업로드 오류] 폴더 ID가 비어있습니다: '{DRIVE_FOLDER_ID}'")
+            return None
+            
+        file_metadata = {"name": file_name, "parents": [DRIVE_FOLDER_ID]}
         mime_type = (
             "text/html"
             if file_path.endswith(".html")
             else "image/png" if file_path.endswith(".png") else "application/octet-stream"
         )
         media = MediaFileUpload(file_path, mimetype=mime_type)
+        
+        # drive_service 파라미터 우선 사용, 없으면 전역 변수 사용
+        service = drive_service_param if drive_service_param else drive_service
+        
         file = api_call_with_backoff(
-            drive_service.files().create, body=file_metadata, media_body=media, fields="id"
+            service.files().create, body=file_metadata, media_body=media, fields="id"
         ).execute()
         file_id = file.get("id")
         api_call_with_backoff(
-            drive_service.permissions().create, fileId=file_id, body={"type": "anyone", "role": "reader"}
+            service.permissions().create, fileId=file_id, body={"type": "anyone", "role": "reader"}
         ).execute()
         image_url = f"https://drive.google.com/uc?export=view&id={file_id}"
         print(f"✅ Drive 업로드 완료: {file_name} -> {image_url}")
