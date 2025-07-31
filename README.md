@@ -1,204 +1,234 @@
-# 🚀 PDA Partner - Production Data Analysis System
+# 🤖 PDA Partner - 생산 데이터 자동화 시스템
 
-**생산 데이터 분석 및 자동화 시스템**
+Google Sheets 기반의 생산 데이터 분석 및 자동화 시스템입니다. 작업시간 분석, NaN/오버타임 분석, 시각화, HTML 리포트 생성, 이메일/카카오톡 알림 기능을 제공합니다.
 
-## 📋 개요
+## ✨ 주요 기능
 
-PDA Partner는 Google Sheets에서 생산 데이터를 자동으로 수집하고 분석하여 다음과 같은 기능을 제공합니다:
-
-- 📊 **실시간 데이터 분석**: NaN 값, 오버타임 발생률 분석
-- 📈 **히트맵 생성**: 주간/월간 트렌드 시각화
-- 📧 **자동 알림**: 이메일 및 카카오톡 알림
-- 🌐 **웹 리포트**: HTML 대시보드 자동 생성
-- ⚡ **GitHub Pages**: 자동 배포
+- 📊 Google Sheets 데이터 자동 추출 및 분석
+- ⏰ 작업시간 및 진행률 계산
+- 🔍 NaN 값 및 오버타임 발생률 분석
+- 📈 다양한 시각화 그래프 생성 (작업시간, 범례, 주간 분석)
+- 🗺️ 히트맵 생성 (주간/월간, 파트너별/모델별)
+- 📧 이메일 자동 발송 (Gmail SMTP)
+- 💬 카카오톡 알림 발송
+- 🌐 HTML 대시보드 생성 및 Google Drive 업로드
+- 📂 GitHub 자동 업로드
+- 📋 JSON 데이터 저장 및 관리
 
 ## 🏗️ 시스템 구조
 
 ```
 📁 PDA_partner/
-├── 🚀 PDA_partner.py          # 메인 실행 파일 (All-in-One)
+├── 🚀 PDA_partner.py          # 메인 실행 파일 (All-in-One 구조)
 ├── 📦 requirements.txt        # Python 의존성
 ├── 📁 config/                 # Google 서비스 계정 키들
+│   ├── gst-manegemnet-70faf8ce1bff.json    # Sheets API 키
+│   └── gst-manegemnet-ab8788a05cff.json    # Drive API 키
 ├── 📁 .github/workflows/      # CI/CD 파이프라인
+│   └── pda-partner.yml        # GitHub Actions 워크플로우
 ├── 📁 output/                 # 생성된 파일들 (자동 생성)
+│   ├── *.png                  # 히트맵 이미지들
+│   ├── *.html                 # HTML 리포트
+│   └── *.json                 # JSON 데이터
+├── 📁 backup_*/               # 백업 폴더들
+├── 📁 archive_*/              # 아카이브 폴더들
 └── 📖 README.md              # 이 문서
 ```
 
-## 🚀 설치 및 실행
+## 🚀 CI/CD 설정
 
-### 로컬 실행
+### GitHub Actions 사용
+
+이 프로젝트는 GitHub Actions를 통한 자동화를 지원합니다.
+
+#### 1. GitHub Secrets 설정
+
+Repository Settings > Secrets and variables > Actions에서 다음 Secrets를 설정하세요:
+
+**필수 Secrets:**
+- `SHEETS_SERVICE_ACCOUNT_KEY`: Google Sheets API 서비스 계정 키 (base64 인코딩)
+- `DRIVE_SERVICE_ACCOUNT_KEY`: Google Drive API 서비스 계정 키 (base64 인코딩)
+- `SPREADSHEET_ID`: 메인 스프레드시트 ID
+- `TARGET_SHEET_NAME`: 타겟 시트 이름 (예: "1월", "2월" 등)
+- `EMAIL_ADDRESS`: 발송자 이메일 주소
+- `EMAIL_PASS`: 이메일 앱 비밀번호
+- `RECEIVER_EMAIL`: 수신자 이메일 주소
+- `DRIVE_FOLDER_ID`: Google Drive 메인 폴더 ID
+- `JSON_DRIVE_FOLDER_ID`: JSON 저장용 Drive 폴더 ID
+
+**선택적 Secrets:**
+- `KAKAO_REST_API_KEY`: 카카오 REST API 키
+- `KAKAO_ACCESS_TOKEN`: 카카오 액세스 토큰
+- `KAKAO_REFRESH_TOKEN`: 카카오 리프레시 토큰
+- `GH_USERNAME`: GitHub 사용자명
+- `GH_REPO`: GitHub 저장소명
+- `GH_TOKEN`: GitHub Personal Access Token
+- `GH_BRANCH`: GitHub 업로드 브랜치 (기본: main)
+
+#### 2. 서비스 계정 키 base64 인코딩
+
+```bash
+# macOS/Linux에서
+base64 -i config/gst-manegemnet-70faf8ce1bff.json
+
+# 또는 온라인 base64 인코더 사용
+# 결과를 SHEETS_SERVICE_ACCOUNT_KEY에 입력
+
+base64 -i config/gst-manegemnet-ab8788a05cff.json
+# 결과를 DRIVE_SERVICE_ACCOUNT_KEY에 입력
+```
+
+#### 3. 실행 스케줄 및 설정
+
+- **자동 실행**: 매일 오후 12시 20분 (KST)
+- **수동 실행**: GitHub Actions 탭에서 "Run workflow" 버튼 클릭
+
+**워크플로우 입력 옵션:**
+- `처리할 항목 수`: 기본값 200개
+- `그래프 생성`: 기본값 false (필요시에만 체크)
+- `GitHub 업로드`: 기본값 true (HTML 파일 자동 업로드)
+
+## 🛠️ 로컬 실행
+
+### 환경 설정
 
 ```bash
 # 1. 저장소 클론
 git clone https://github.com/isolhsolfafa/PDA_partner.git
 cd PDA_partner
 
-# 2. 의존성 설치
+# 2. Python 의존성 설치
 pip install -r requirements.txt
 
-# 3. 환경변수 설정
-cp .env.example .env
-# .env 파일을 편집하여 필요한 설정값 입력
+# 3. 환경변수 설정 (.env 파일 생성)
+SPREADSHEET_ID=your_spreadsheet_id
+TARGET_SHEET_NAME=1월
+DRIVE_FOLDER_ID=your_drive_folder_id
+JSON_DRIVE_FOLDER_ID=your_json_drive_folder_id
+EMAIL_ADDRESS=your_email@gmail.com
+EMAIL_PASS=your_app_password
+RECEIVER_EMAIL=receiver@gmail.com
+KAKAO_REST_API_KEY=your_kakao_api_key
+KAKAO_ACCESS_TOKEN=your_access_token
+KAKAO_REFRESH_TOKEN=your_refresh_token
+SHEETS_KEY_PATH=config/gst-manegemnet-70faf8ce1bff.json
+DRIVE_KEY_PATH=config/gst-manegemnet-ab8788a05cff.json
 
-# 4. Google 서비스 계정 키 설정
-# config/ 폴더에 서비스 계정 JSON 키 파일들 배치
+# 4. 서비스 계정 키 파일 배치
+mkdir -p config
+# Google Cloud Console에서 다운로드한 서비스 계정 키 파일들을 config/ 폴더에 배치
 
 # 5. 실행
 python PDA_partner.py
 ```
 
-### GitHub Actions (자동 실행)
+### 실행 옵션
 
-- **매일 오후 2시 (KST)** 자동 실행
-- **수동 실행** 가능 (GitHub Actions 탭에서)
+```bash
+# 기본 실행 (모든 기능)
+python PDA_partner.py
 
-## ⚙️ 환경변수 설정
+# 테스트 모드 (제한된 항목 처리)
+export LIMIT=10
+python PDA_partner.py
 
-### 필수 환경변수
+# 그래프 생성 없이 실행
+export GENERATE_GRAPHS=false
+python PDA_partner.py
 
-```env
-# Google API
-SPREADSHEET_ID="your_spreadsheet_id"
-TARGET_SHEET_NAME="시트이름"
-DRIVE_FOLDER_ID="drive_folder_id"
-JSON_DRIVE_FOLDER_ID="json_folder_id"
-
-# GitHub 설정
-GITHUB_TOKEN="your_github_token"
-GITHUB_USERNAME="your_username"
-GITHUB_REPO="your_repo"
-
-# 카카오톡 API
-KAKAO_REST_API_KEY="your_kakao_api_key"
-KAKAO_ACCESS_TOKEN="your_access_token"
-KAKAO_REFRESH_TOKEN="your_refresh_token"
-
-# 이메일 설정
-EMAIL_ADDRESS="your_email@gmail.com"
-EMAIL_PASS="your_app_password"
-RECEIVER_EMAIL="receiver@email.com"
+# GitHub 업로드 없이 실행
+export GITHUB_UPLOAD=false
+python PDA_partner.py
 ```
 
-### 선택적 환경변수
-
-```env
-# 실행 옵션
-LIMIT="200"                    # 처리할 항목 수
-GENERATE_GRAPHS="auto"         # 그래프 생성 (auto/true/false)
-GITHUB_UPLOAD="auto"           # GitHub 업로드 (auto/true/false)
-TEST_MODE="false"              # 테스트 모드
-```
-
-## 📊 주요 기능
+## 📊 주요 구성 요소
 
 ### 1. 데이터 분석
-- **NaN 값 감지**: 누락된 데이터 식별
-- **오버타임 계산**: 작업 시간 초과 분석
-- **협력사별 분석**: 파트너사별 성과 측정
+- Google Sheets에서 생산 데이터 실시간 수집
+- NaN 값 발생률 및 오버타임 분석
+- 협력사별, 모델별 성과 지표 계산
+- 작업 진행률 및 시간 분석
 
 ### 2. 시각화
-- **주간 히트맵**: 일별 트렌드 분석
-- **월간 히트맵**: 월별 패턴 분석 (마지막 금요일 생성)
-- **대시보드**: HTML 기반 통합 리포트
+- **작업시간 그래프**: 모델별 총 작업시간 차트
+- **범례 차트**: 작업 단계별 색상 범례
+- **WD 작업시간**: 평일 작업시간 분석
+- **히트맵**: 주간/월간 NaN 비율 트렌드 (협력사별/모델별)
 
-### 3. 알림 시스템
-- **이메일**: 상세 리포트 및 첨부파일
-- **카카오톡**: 요약 알림
-- **자동 토큰 갱신**: 카카오톡 API 토큰 자동 관리
+### 3. 리포팅
+- **HTML 대시보드**: 종합 분석 결과 웹 페이지
+- **이메일 리포트**: 요약 정보 및 첨부파일 자동 발송
+- **카카오톡 알림**: 실시간 처리 결과 알림
+- **JSON 데이터**: 구조화된 분석 결과 저장
 
-## 🔧 GitHub Secrets 설정
+### 4. 자동화
+- **GitHub Actions**: 매일 자동 실행
+- **Google Drive**: 모든 결과물 자동 업로드
+- **GitHub Pages**: HTML 리포트 자동 배포
+- **에러 처리**: 견고한 예외 처리 및 재시도 로직
 
-GitHub 저장소의 **Settings > Secrets and variables > Actions**에서 다음 값들을 설정:
+## 🔧 설정 가이드
 
-### Google API
-- `SPREADSHEET_ID`
-- `DRIVE_FOLDER_ID`
-- `JSON_DRIVE_FOLDER_ID`
-- `TARGET_SHEET_NAME`
-- `SHEETS_SERVICE_ACCOUNT_KEY` (base64 인코딩)
-- `DRIVE_SERVICE_ACCOUNT_KEY` (base64 인코딩)
+### Google API 설정
 
-### GitHub 설정
-- `GH_TOKEN`
-- `GH_USERNAME`
-- `GH_REPO`
-- `GH_BRANCH`
+1. **Google Cloud Console**에서 프로젝트 생성
+2. **Google Sheets API**, **Google Drive API** 활성화
+3. **서비스 계정** 생성 및 키 다운로드
+4. **Google Drive 폴더** 생성 및 서비스 계정에 편집 권한 부여
+5. **Google Sheets** 문서를 서비스 계정에 공유
 
-### 카카오톡 API
-- `KAKAO_REST_API_KEY`
-- `KAKAO_ACCESS_TOKEN`
-- `KAKAO_REFRESH_TOKEN`
+### 카카오톡 API 설정
+
+1. **Kakao Developers**에서 앱 생성
+2. **REST API 키** 발급
+3. **카카오 로그인** 활성화
+4. **액세스 토큰** 및 **리프레시 토큰** 발급
 
 ### 이메일 설정
-- `EMAIL_ADDRESS`
-- `EMAIL_PASS`
-- `RECEIVER_EMAIL`
 
-## 🕐 스케줄링
+1. **Gmail**에서 2단계 인증 활성화
+2. **앱 비밀번호** 생성
+3. SMTP 설정으로 자동 이메일 발송
 
-### 자동 실행
-- **매일 오후 2시 (KST)**: 정기 실행
-- **월요일/금요일**: 그래프 생성 활성화
-- **마지막 금요일**: 월간 히트맵 생성
-
-### 수동 실행
-GitHub Actions 탭에서 **"Run workflow"** 버튼으로 수동 실행 가능
-
-## 📁 출력 파일들
-
-### 로컬 생성
-```
-output/
-├── nan_ot_results_YYYYMMDD_HHMMSS_요일_회차.json
-├── weekly_partner_nan_heatmap_YYYYMMDD.png
-├── monthly_partner_nan_heatmap_YYYYMMDD.png
-└── monthly_model_nan_heatmap_YYYYMMDD.png
-```
-
-### 웹 배포
-- **partner.html**: GitHub Pages로 자동 배포
-- **히트맵 이미지들**: Google Drive 자동 업로드
-
-## 🚨 문제 해결
-
-### 일반적인 문제들
-
-1. **Google API 권한 오류**
-   - 서비스 계정에 Sheets/Drive 권한 확인
-   - JSON 키 파일 형식 확인
-
-2. **카카오톡 알림 실패**
-   - 토큰 만료 확인 (자동 갱신됨)
-   - REST API 키 확인
-
-3. **GitHub 업로드 실패**
-   - Personal Access Token 권한 확인
-   - 저장소 접근 권한 확인
+## 📈 모니터링
 
 ### 로그 확인
+
 ```bash
-# 실행 로그 확인
+# 로컬 실행 시 로그 파일
 tail -f pda_partner.log
 
-# GitHub Actions 로그는 Actions 탭에서 확인
+# GitHub Actions 로그
+# Actions 탭에서 워크플로우 실행 로그 확인
 ```
 
-## 🔄 업데이트 및 유지보수
+### 주요 메트릭
 
-### 의존성 업데이트
-```bash
-pip install --upgrade -r requirements.txt
-```
+- **처리 성공률**: 정상 처리된 모델 수 / 전체 모델 수
+- **NaN 발생률**: 데이터 누락 비율
+- **오버타임 발생률**: 예상 시간 초과 비율
+- **실행 시간**: 전체 파이프라인 실행 소요 시간
 
-### 토큰 갱신
-- **카카오톡**: 자동 갱신 (코드에서 처리)
-- **GitHub**: 필요시 새 Personal Access Token 발급
-- **Google**: 서비스 계정은 만료 없음
+## 🤝 기여 방법
+
+1. 이 저장소를 포크합니다
+2. 기능 브랜치를 생성합니다 (`git checkout -b feature/amazing-feature`)
+3. 변경사항을 커밋합니다 (`git commit -m 'Add amazing feature'`)
+4. 브랜치에 푸시합니다 (`git push origin feature/amazing-feature`)
+5. Pull Request를 생성합니다
+
+## 📄 라이선스
+
+이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
 
 ## 📞 지원
 
-문제가 발생하면 GitHub Issues에서 문의해주세요.
+문제가 발생하거나 질문이 있으시면:
+
+1. **GitHub Issues**: 버그 리포트 및 기능 요청
+2. **GitHub Discussions**: 일반적인 질문 및 토론
+3. **Wiki**: 상세한 설정 가이드 및 FAQ
 
 ---
 
-**⚡ 매일 자동으로 실행되는 안정적인 생산 데이터 분석 시스템입니다.** 
+**⚡ PDA Partner**로 생산 데이터 분석을 자동화하고 업무 효율성을 극대화하세요!

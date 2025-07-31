@@ -2,8 +2,8 @@ name: PDA Partner Daily Run
 
 on:
   schedule:
-    # 매일 오후 2시 (KST) = UTC 오전 5시
-    - cron: '0 5 * * *'
+    # 매일 오후 12시 20분 (KST) = UTC 오전 3시 20분
+    - cron: '20 3 * * *'
   workflow_dispatch:
     inputs:
       limit:
