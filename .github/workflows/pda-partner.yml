@@ -106,7 +106,7 @@ jobs:
         if [ "${{ github.event.inputs.generate_graphs }}" == "true" ]; then
           export GENERATE_GRAPHS="true"
         else
-          export GENERATE_GRAPHS="auto"
+          export GENERATE_GRAPHS="false"
         fi
         
         if [ "${{ github.event.inputs.github_upload }}" == "true" ]; then
