@@ -2103,6 +2103,14 @@ def generate_heatmap(drive_service, period="weekly", group_by="partner", week_nu
     period: "weekly" (주간), "monthly" (월간)
     group_by: "partner" (협력사), "model" (모델)
     """
+    # 폰트 설정 추가
+    global font_prop
+    try:
+        # font_prop가 정의되어 있는지 확인
+        font_prop
+    except NameError:
+        # font_prop가 정의되지 않은 경우 기본값으로 설정
+        font_prop = None
     # 데이터 로드
     friday_only = period == "monthly"
     all_data = load_json_files_from_drive(drive_service, period, week_number, friday_only)
@@ -2253,11 +2261,18 @@ def generate_heatmap(drive_service, period="weekly", group_by="partner", week_nu
     plt.figure(figsize=(12, max(6, len(heatmap_data.index) * 0.6)))
     sns.heatmap(heatmap_data, annot=True, fmt=".1f", cmap="YlOrRd", cbar_kws={"label": "NaN 비율 (%)"}, linewidths=0.5)
 
-    plt.title(title, fontproperties=font_prop, fontsize=16)
-    plt.xlabel("측정 날짜", fontproperties=font_prop)
-    plt.ylabel(y_label, fontproperties=font_prop)
-    plt.xticks(ticks=np.arange(len(labels)) + 0.5, labels=labels, rotation=45, ha="right", fontproperties=font_prop)
-    plt.yticks(rotation=0, fontproperties=font_prop)
+    if font_prop:
+        plt.title(title, fontproperties=font_prop, fontsize=16)
+        plt.xlabel("측정 날짜", fontproperties=font_prop)
+        plt.ylabel(y_label, fontproperties=font_prop)
+        plt.xticks(ticks=np.arange(len(labels)) + 0.5, labels=labels, rotation=45, ha="right", fontproperties=font_prop)
+        plt.yticks(rotation=0, fontproperties=font_prop)
+    else:
+        plt.title(title, fontsize=16)
+        plt.xlabel("측정 날짜")
+        plt.ylabel(y_label)
+        plt.xticks(ticks=np.arange(len(labels)) + 0.5, labels=labels, rotation=45, ha="right")
+        plt.yticks(rotation=0)
     plt.tight_layout()
 
     # 파일명 및 저장
@@ -2275,6 +2290,14 @@ def generate_weekly_report_heatmap(drive_service, output_path=None):
     이번 주(월~금)의 모든 JSON을 Drive에서 읽어, 협력사별/날짜별 NaN 비율 히트맵을 생성합니다.
     (Drive JSONs -> Weekly Heatmap)
     """
+    # 폰트 설정 추가
+    global font_prop
+    try:
+        # font_prop가 정의되어 있는지 확인
+        font_prop
+    except NameError:
+        # font_prop가 정의되지 않은 경우 기본값으로 설정
+        font_prop = None
     # 1. 이번 주 날짜 계산 (월요일 ~ 금요일)
     today = datetime.now(pytz.timezone("Asia/Seoul"))
     start_of_week = today - timedelta(days=today.weekday())
@@ -2406,11 +2429,18 @@ def generate_weekly_report_heatmap(drive_service, output_path=None):
         cbar_kws={"label": "NaN 비율 (%)"},
     )
 
-    plt.title("주간 NaN 비율 추이 (mixed)", fontproperties=font_prop, fontsize=16)
-    plt.xlabel("측정 날짜", fontproperties=font_prop)
-    plt.ylabel("협력사", fontproperties=font_prop)
-    plt.xticks(rotation=0, fontproperties=font_prop)
-    plt.yticks(rotation=0, fontproperties=font_prop)
+    if font_prop:
+        plt.title("주간 NaN 비율 추이 (mixed)", fontproperties=font_prop, fontsize=16)
+        plt.xlabel("측정 날짜", fontproperties=font_prop)
+        plt.ylabel("협력사", fontproperties=font_prop)
+        plt.xticks(rotation=0, fontproperties=font_prop)
+        plt.yticks(rotation=0, fontproperties=font_prop)
+    else:
+        plt.title("주간 NaN 비율 추이 (mixed)", fontsize=16)
+        plt.xlabel("측정 날짜")
+        plt.ylabel("협력사")
+        plt.xticks(rotation=0)
+        plt.yticks(rotation=0)
     plt.tight_layout()
 
     # 날짜가 포함된 파일명 생성
