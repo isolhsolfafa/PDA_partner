@@ -106,7 +106,7 @@ jobs:
         if [ "${{ github.event.inputs.generate_graphs }}" == "false" ]; then
           export GENERATE_GRAPHS="false"
         else
-          export GENERATE_GRAPHS="auto"  # 크론 실행 시 기본값: auto (월/금 자동)
+          export GENERATE_GRAPHS="false"  # 크론 실행 시 기본값: auto (월/금 자동)
         fi
         
         if [ "${{ github.event.inputs.github_upload }}" == "false" ]; then

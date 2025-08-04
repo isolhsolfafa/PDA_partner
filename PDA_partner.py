@@ -1291,42 +1291,50 @@ def build_combined_email_body(
     if heatmap_url:
         nova_links.append(f'📅 주간 협력사 NaN 히트맵: <a href="{heatmap_url}" target="_blank">그래프 보기</a>')
 
-    # 월간 히트맵 링크들 (동적으로 최신 파일 검색)
+    # 월간 히트맵 링크들 (Google Drive에서 최신 파일 검색)
     if not monthly_partner_url:
-        # output 폴더에서 최신 월간 협력사 히트맵 파일 검색
-        import glob
-        partner_files = glob.glob("output/monthly_partner_nan_heatmap_*.png")
-        if partner_files:
-            # 파일명에서 날짜 추출하여 최신 파일 선택
-            latest_partner_file = max(partner_files, key=lambda x: x.split('_')[-1].replace('.png', ''))
-            print(f"📁 최신 월간 협력사 히트맵 파일 발견: {latest_partner_file}")
+        # Google Drive에서 최신 월간 협력사 히트맵 파일 검색
+        try:
+            query = f"'{DRIVE_FOLDER_ID}' in parents and name contains 'monthly_partner_nan_heatmap_'"
+            files = drive_service.files().list(q=query, fields="files(id, name)").execute().get("files", [])
             
-            monthly_partner_url = upload_to_drive(latest_partner_file)
-            if monthly_partner_url:
-                print(f"✅ 월간 협력사 히트맵 업로드 완료: {monthly_partner_url}")
+            if files:
+                # 파일명에서 날짜 추출하여 최신 파일 선택
+                latest_partner_file = max(files, key=lambda x: x['name'].split('_')[-1].replace('.png', ''))
+                monthly_partner_url = f"https://drive.google.com/uc?export=view&id={latest_partner_file['id']}"
+                print(f"📁 Drive에서 최신 월간 협력사 히트맵 발견: {latest_partner_file['name']}")
+                print(f"✅ 월간 협력사 히트맵 URL: {monthly_partner_url}")
+            else:
+                print("⚠️ Drive에서 월간 협력사 히트맵을 찾을 수 없습니다.")
+        except Exception as e:
+            print(f"❌ Drive 검색 오류 (협력사): {e}")
         
-        # 로컬 파일이 없으면 환경변수 기본값 사용
+        # Drive에서 찾지 못하면 환경변수 기본값 사용
         if not monthly_partner_url:
             monthly_partner_url = os.getenv("MONTHLY_PARTNER_HEATMAP_URL", "https://drive.google.com/uc?export=view&id=1Bh1iUvPIQfsQ_wUTs_DOln0cZGY_hHL7")
-            print(f"⚠️ 로컬 월간 협력사 히트맵이 없어 환경변수 URL 사용: {monthly_partner_url}")
+            print(f"⚠️ Drive 검색 실패, 환경변수 URL 사용: {monthly_partner_url}")
 
     if not monthly_model_url:
-        # output 폴더에서 최신 월간 모델 히트맵 파일 검색
-        import glob
-        model_files = glob.glob("output/monthly_model_nan_heatmap_*.png")
-        if model_files:
-            # 파일명에서 날짜 추출하여 최신 파일 선택
-            latest_model_file = max(model_files, key=lambda x: x.split('_')[-1].replace('.png', ''))
-            print(f"📁 최신 월간 모델 히트맵 파일 발견: {latest_model_file}")
+        # Google Drive에서 최신 월간 모델 히트맵 파일 검색
+        try:
+            query = f"'{DRIVE_FOLDER_ID}' in parents and name contains 'monthly_model_nan_heatmap_'"
+            files = drive_service.files().list(q=query, fields="files(id, name)").execute().get("files", [])
             
-            monthly_model_url = upload_to_drive(latest_model_file)
-            if monthly_model_url:
-                print(f"✅ 월간 모델 히트맵 업로드 완료: {monthly_model_url}")
+            if files:
+                # 파일명에서 날짜 추출하여 최신 파일 선택
+                latest_model_file = max(files, key=lambda x: x['name'].split('_')[-1].replace('.png', ''))
+                monthly_model_url = f"https://drive.google.com/uc?export=view&id={latest_model_file['id']}"
+                print(f"📁 Drive에서 최신 월간 모델 히트맵 발견: {latest_model_file['name']}")
+                print(f"✅ 월간 모델 히트맵 URL: {monthly_model_url}")
+            else:
+                print("⚠️ Drive에서 월간 모델 히트맵을 찾을 수 없습니다.")
+        except Exception as e:
+            print(f"❌ Drive 검색 오류 (모델): {e}")
         
-        # 로컬 파일이 없으면 환경변수 기본값 사용
+        # Drive에서 찾지 못하면 환경변수 기본값 사용
         if not monthly_model_url:
             monthly_model_url = os.getenv("MONTHLY_MODEL_HEATMAP_URL", "https://drive.google.com/uc?export=view&id=1DGOJCR5Ie5VGgMMcgIEQc0D45z8-uuIG")
-            print(f"⚠️ 로컬 월간 모델 히트맵이 없어 환경변수 URL 사용: {monthly_model_url}")
+            print(f"⚠️ Drive 검색 실패, 환경변수 URL 사용: {monthly_model_url}")
 
     # 링크가 있는 경우에만 추가
     if monthly_partner_url:
