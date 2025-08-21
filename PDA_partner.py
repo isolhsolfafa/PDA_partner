@@ -56,8 +56,12 @@ os.environ["SSL_CERT_FILE"] = certifi.where()
 
 # Global Variables - 보안 개선: 환경변수 사용
 TEST_MODE = os.getenv("TEST_MODE", "True").lower() == "true"
-DRIVE_FOLDER_ID = os.getenv("DRIVE_FOLDER_ID", "1Gylm36vhtrl_yCHurZYGgeMlt5U0CliE")  # 최종 리포트(HTML), 그래프 등 저장용
-JSON_DRIVE_FOLDER_ID = os.getenv("JSON_DRIVE_FOLDER_ID", "13FdsniLHb4qKmn5M4-75H8SvgEyW2Ck1")  # JSON 데이터 저장용
+DRIVE_FOLDER_ID = os.getenv(
+    "DRIVE_FOLDER_ID", "1Gylm36vhtrl_yCHurZYGgeMlt5U0CliE"
+)  # 최종 리포트(HTML), 그래프 등 저장용
+JSON_DRIVE_FOLDER_ID = os.getenv(
+    "JSON_DRIVE_FOLDER_ID", "13FdsniLHb4qKmn5M4-75H8SvgEyW2Ck1"
+)  # JSON 데이터 저장용
 
 # 환경변수 디버깅 로그
 print(f"🔍 [DEBUG] DRIVE_FOLDER_ID 환경변수: '{DRIVE_FOLDER_ID}'")
@@ -94,12 +98,16 @@ if not GITHUB_TOKEN or not REST_API_KEY:
     print("⚠️ 일부 API 키가 설정되지 않았습니다. 해당 기능이 제한될 수 있습니다.")
 
 if not KAKAO_ACCESS_TOKEN or not REFRESH_TOKEN:
-    print("⚠️ 카카오톡 토큰이 설정되지 않았습니다. 카카오톡 알림 기능이 제한될 수 있습니다.")
+    print(
+        "⚠️ 카카오톡 토큰이 설정되지 않았습니다. 카카오톡 알림 기능이 제한될 수 있습니다."
+    )
 
 # 서비스 계정 키 파일 경로
-sheets_json_key_path = os.getenv("SHEETS_KEY_PATH", "/Users/kdkyu311/Downloads/gst-manegemnet-70faf8ce1bff.json")
-drive_json_key_path = os.getenv("DRIVE_KEY_PATH", "/Users/kdkyu311/Downloads/gst-manegemnet-ab8788a05cff.json")
-spreadsheet_id = os.getenv("SPREADSHEET_ID", "19dkwKNW6VshCg3wTemzmbbQlbATfq6brAWluaps1Rm0")
+sheets_json_key_path = os.getenv("SHEETS_KEY_PATH")
+drive_json_key_path = os.getenv("DRIVE_KEY_PATH")
+spreadsheet_id = os.getenv(
+    "SPREADSHEET_ID", "19dkwKNW6VshCg3wTemzmbbQlbATfq6brAWluaps1Rm0"
+)
 folder_id = DRIVE_FOLDER_ID
 
 SCOPES_SHEETS = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -107,13 +115,25 @@ SCOPES_DRIVE = ["https://www.googleapis.com/auth/drive"]
 
 # 서비스 계정 인증 및 서비스 초기화 (에러 처리 강화)
 try:
+    if not sheets_json_key_path:
+        raise ValueError("SHEETS_KEY_PATH 환경변수가 설정되지 않았습니다.")
+    if not drive_json_key_path:
+        raise ValueError("DRIVE_KEY_PATH 환경변수가 설정되지 않았습니다.")
     if not os.path.exists(sheets_json_key_path):
-        raise FileNotFoundError(f"Sheets 서비스 계정 키 파일을 찾을 수 없습니다: {sheets_json_key_path}")
+        raise FileNotFoundError(
+            f"Sheets 서비스 계정 키 파일을 찾을 수 없습니다: {sheets_json_key_path}"
+        )
     if not os.path.exists(drive_json_key_path):
-        raise FileNotFoundError(f"Drive 서비스 계정 키 파일을 찾을 수 없습니다: {drive_json_key_path}")
+        raise FileNotFoundError(
+            f"Drive 서비스 계정 키 파일을 찾을 수 없습니다: {drive_json_key_path}"
+        )
 
-    sheets_credentials = Credentials.from_service_account_file(sheets_json_key_path, scopes=SCOPES_SHEETS)
-    drive_credentials = Credentials.from_service_account_file(drive_json_key_path, scopes=SCOPES_DRIVE)
+    sheets_credentials = Credentials.from_service_account_file(
+        sheets_json_key_path, scopes=SCOPES_SHEETS
+    )
+    drive_credentials = Credentials.from_service_account_file(
+        drive_json_key_path, scopes=SCOPES_DRIVE
+    )
 
     sheets_service = build("sheets", "v4", credentials=sheets_credentials)
     drive_service = build("drive", "v3", credentials=drive_credentials)
@@ -149,8 +169,15 @@ else:
     # 시스템에서 설치된 한글 폰트를 동적으로 찾기
     print("🔍 시스템에서 한글 폰트를 검색 중...")
     available_fonts = [f.name for f in fm.fontManager.ttflist]
-    korean_fonts = [font for font in available_fonts if any(keyword in font.lower() for keyword in ['nanum', 'malgun', 'dotum', 'gulim', 'batang'])]
-    
+    korean_fonts = [
+        font
+        for font in available_fonts
+        if any(
+            keyword in font.lower()
+            for keyword in ["nanum", "malgun", "dotum", "gulim", "batang"]
+        )
+    ]
+
     if korean_fonts:
         selected_font = korean_fonts[0]
         print(f"✅ 한글 폰트 발견 및 적용: {selected_font}")
@@ -180,7 +207,9 @@ def api_call_with_backoff(func, *args, **kwargs):
 # --------------------------
 # 함수: 시트 이름으로 sheetId 가져오기
 def get_sheet_id_by_name(spreadsheet_id, sheet_name):
-    metadata = api_call_with_backoff(sheets_service.spreadsheets().get, spreadsheetId=spreadsheet_id).execute()
+    metadata = api_call_with_backoff(
+        sheets_service.spreadsheets().get, spreadsheetId=spreadsheet_id
+    ).execute()
     for sheet in metadata.get("sheets", []):
         if sheet["properties"]["title"] == sheet_name:
             return sheet["properties"]["sheetId"]
@@ -199,7 +228,9 @@ def fetch_entire_sheet_values(spreadsheet_id, sheet_range=None):
     if sheet_range is None:
         sheet_range = f"'{TARGET_SHEET_NAME}'!A:AA"
     result = api_call_with_backoff(
-        sheets_service.spreadsheets().values().get, spreadsheetId=spreadsheet_id, range=sheet_range
+        sheets_service.spreadsheets().values().get,
+        spreadsheetId=spreadsheet_id,
+        range=sheet_range,
     ).execute()
     return result.get("values", [])
 
@@ -251,34 +282,42 @@ def upload_to_drive(file_path, drive_service_param=None):
     try:
         # 파일명만 추출 (경로 제거)
         file_name = os.path.basename(file_path)
-        
+
         # 전역 변수 가져오기
         global DRIVE_FOLDER_ID, drive_service
-        
-        print(f"🔍 [DEBUG] Drive 업로드 시도 - 파일: {file_name}, 폴더 ID: {DRIVE_FOLDER_ID}")
-        
+
+        print(
+            f"🔍 [DEBUG] Drive 업로드 시도 - 파일: {file_name}, 폴더 ID: {DRIVE_FOLDER_ID}"
+        )
+
         # 폴더 ID 검증
         if not DRIVE_FOLDER_ID or DRIVE_FOLDER_ID.strip() == "":
             print(f"❌ [Drive 업로드 오류] 폴더 ID가 비어있습니다: '{DRIVE_FOLDER_ID}'")
             return None
-            
+
         file_metadata = {"name": file_name, "parents": [DRIVE_FOLDER_ID]}
         mime_type = (
             "text/html"
             if file_path.endswith(".html")
-            else "image/png" if file_path.endswith(".png") else "application/octet-stream"
+            else (
+                "image/png"
+                if file_path.endswith(".png")
+                else "application/octet-stream"
+            )
         )
         media = MediaFileUpload(file_path, mimetype=mime_type)
-        
+
         # drive_service 파라미터 우선 사용, 없으면 전역 변수 사용
         service = drive_service_param if drive_service_param else drive_service
-        
+
         file = api_call_with_backoff(
             service.files().create, body=file_metadata, media_body=media, fields="id"
         ).execute()
         file_id = file.get("id")
         api_call_with_backoff(
-            service.permissions().create, fileId=file_id, body={"type": "anyone", "role": "reader"}
+            service.permissions().create,
+            fileId=file_id,
+            body={"type": "anyone", "role": "reader"},
         ).execute()
         image_url = f"https://drive.google.com/uc?export=view&id={file_id}"
         print(f"✅ Drive 업로드 완료: {file_name} -> {image_url}")
@@ -292,7 +331,9 @@ def upload_to_drive(file_path, drive_service_param=None):
 def get_spreadsheet_title(spreadsheet_id):
     try:
         info = api_call_with_backoff(
-            sheets_service.spreadsheets().get, spreadsheetId=spreadsheet_id, fields="properties.title"
+            sheets_service.spreadsheets().get,
+            spreadsheetId=spreadsheet_id,
+            fields="properties.title",
         ).execute()
         return info["properties"]["title"]
     except Exception as e:
@@ -307,20 +348,20 @@ def get_order_no(spreadsheet_id):
 def get_linked_spreadsheet_ids(spreadsheet_id):
     """하이퍼링크에서 스프레드시트 ID 추출 (Rate Limit 방지)"""
     import time
-    
+
     pmmd_hyperlink_range = f"'{TARGET_SHEET_NAME}'!A:A"
     print(f"🔍 스프레드시트 ID 추출 중... (Rate Limit 방지를 위해 천천히 진행)")
-    
+
     # Rate Limit 방지를 위한 지연
     time.sleep(2)
-    
+
     result = api_call_with_backoff(
         sheets_service.spreadsheets().values().get,
         spreadsheetId=spreadsheet_id,
         range=pmmd_hyperlink_range,
         valueRenderOption="FORMULA",
     ).execute()
-    
+
     formulas = result.get("values", [])
     linked_spreadsheet_ids = [
         re.search(r"/d/([a-zA-Z0-9-_]+)", cell).group(1)
@@ -328,8 +369,10 @@ def get_linked_spreadsheet_ids(spreadsheet_id):
         for cell in row
         if cell.startswith("=HYPERLINK(")
     ]
-    
-    print(f"추출된 스프레드시트 ID들: {linked_spreadsheet_ids[:5]}{'...' if len(linked_spreadsheet_ids) > 5 else ''} (총 {len(linked_spreadsheet_ids)}개)")
+
+    print(
+        f"추출된 스프레드시트 ID들: {linked_spreadsheet_ids[:5]}{'...' if len(linked_spreadsheet_ids) > 5 else ''} (총 {len(linked_spreadsheet_ids)}개)"
+    )
     return linked_spreadsheet_ids
 
 
@@ -377,7 +420,11 @@ def parse_korean_datetime(dt_input):
         if re.match(r"^\d{4}\.\s*\d{1,2}\.\s*\d{1,2}\s*$", s):
             s += " 00:00:00"
         s = s.replace("오전", "AM").replace("오후", "PM")
-        fmt = "%Y. %m. %d %p %I:%M:%S" if "AM" in s or "PM" in s else "%Y. %m. %d %H:%M:%S"
+        fmt = (
+            "%Y. %m. %d %p %I:%M:%S"
+            if "AM" in s or "PM" in s
+            else "%Y. %m. %d %H:%M:%S"
+        )
         return pd.to_datetime(s, format=fmt, errors="coerce")
     return pd.NaT
 
@@ -392,8 +439,12 @@ def calculate_working_hours_with_holidays(start_time, end_time):
     current_time = start_time
     while current_time < end_time:
         day_of_week = current_time.weekday()
-        work_start = datetime.combine(current_time.date(), time(8, 0, 0) if day_of_week in [5, 6] else WORK_START)
-        work_end = datetime.combine(current_time.date(), time(17, 0, 0) if day_of_week in [5, 6] else WORK_END)
+        work_start = datetime.combine(
+            current_time.date(), time(8, 0, 0) if day_of_week in [5, 6] else WORK_START
+        )
+        work_end = datetime.combine(
+            current_time.date(), time(17, 0, 0) if day_of_week in [5, 6] else WORK_END
+        )
         work_start = max(work_start, current_time)
         work_end = min(work_end, end_time)
         daily_hours = (work_end - work_start).total_seconds() / 3600
@@ -407,20 +458,33 @@ def calculate_working_hours_with_holidays(start_time, end_time):
             b_start_dt = datetime.combine(current_time.date(), b_start)
             b_end_dt = datetime.combine(current_time.date(), b_end)
             if work_start < b_end_dt and b_start_dt < work_end:
-                daily_hours -= (min(work_end, b_end_dt) - max(work_start, b_start_dt)).total_seconds() / 3600
+                daily_hours -= (
+                    min(work_end, b_end_dt) - max(work_start, b_start_dt)
+                ).total_seconds() / 3600
         total_hours += min(daily_hours, 9 if day_of_week in [5, 6] else MAX_DAILY_HOURS)
-        current_time = datetime.combine(current_time.date() + timedelta(days=1), WORK_START)
+        current_time = datetime.combine(
+            current_time.date() + timedelta(days=1), WORK_START
+        )
     return total_hours
 
 
 def process_data(df_use, model_name):
     df_complete = df_use.dropna(subset=["시작 시간", "완료 시간"]).copy()
     df_complete["워킹데이 소요 시간"] = df_complete.apply(
-        lambda row: calculate_working_hours_with_holidays(row["시작 시간"], row["완료 시간"]), axis=1
+        lambda row: calculate_working_hours_with_holidays(
+            row["시작 시간"], row["완료 시간"]
+        ),
+        axis=1,
     )
-    df_complete["작업 분류"] = df_complete["내용"].apply(lambda x: classify_task(x, model_name))
-    task_total_time = df_complete.groupby("내용")["워킹데이 소요 시간"].sum().reset_index()
-    task_total_time["총 워킹 소요 시간 (시간:분)"] = task_total_time["워킹데이 소요 시간"].apply(format_hours)
+    df_complete["작업 분류"] = df_complete["내용"].apply(
+        lambda x: classify_task(x, model_name)
+    )
+    task_total_time = (
+        df_complete.groupby("내용")["워킹데이 소요 시간"].sum().reset_index()
+    )
+    task_total_time["총 워킹 소요 시간 (시간:분)"] = task_total_time[
+        "워킹데이 소요 시간"
+    ].apply(format_hours)
     return task_total_time.sort_values("워킹데이 소요 시간", ascending=True)
 
 
@@ -557,10 +621,19 @@ def get_mechanical_tasks(model_name):
 
 def classify_task(content, model_name):
     model_name = model_name.upper()
-    tms_tasks = ["BURNER ASSY(TMS)", "WET TANK ASSY(TMS)", "COOLING UNIT(TMS)", "REACTOR ASSY(TMS)"]
+    tms_tasks = [
+        "BURNER ASSY(TMS)",
+        "WET TANK ASSY(TMS)",
+        "COOLING UNIT(TMS)",
+        "REACTOR ASSY(TMS)",
+    ]
 
     # DRAGON, DRAGON DUAL, SWS-I 모델에서는 tms_tasks도 기구로 분류
-    if model_name in ["DRAGON", "DRAGON DUAL", "SWS-I"] and content in get_mechanical_tasks(model_name):
+    if model_name in [
+        "DRAGON",
+        "DRAGON DUAL",
+        "SWS-I",
+    ] and content in get_mechanical_tasks(model_name):
         return "기구"
 
     if content in tms_tasks and model_name not in ["DRAGON", "DRAGON DUAL", "SWS-I"]:
@@ -582,7 +655,9 @@ def calculate_progress_by_category(df, model_name):
     df["진행율"] = df.apply(
         lambda row: (
             100.0
-            if pd.isna(row["진행율"]) and pd.notna(row["시작 시간"]) and pd.notna(row["완료 시간"])
+            if pd.isna(row["진행율"])
+            and pd.notna(row["시작 시간"])
+            and pd.notna(row["완료 시간"])
             else row["진행율"]
         ),
         axis=1,
@@ -614,7 +689,11 @@ def get_avg_time_mapping(model_name):
         avg_values = (
             sheets_service.spreadsheets()
             .values()
-            .get(spreadsheetId=avg_spreadsheet_id, range=sheet_range, valueRenderOption="FORMATTED_VALUE")
+            .get(
+                spreadsheetId=avg_spreadsheet_id,
+                range=sheet_range,
+                valueRenderOption="FORMATTED_VALUE",
+            )
             .execute()
             .get("values", [])
         )
@@ -622,7 +701,9 @@ def get_avg_time_mapping(model_name):
             return {}
         return {
             row[0].strip(): (
-                parse_avg_time_string(row[1]) if "h" in row[1].lower() or "m" in row[1].lower() else float(row[1])
+                parse_avg_time_string(row[1])
+                if "h" in row[1].lower() or "m" in row[1].lower()
+                else float(row[1])
             )
             for row in avg_values[1:]
             if len(row) >= 2
@@ -638,11 +719,17 @@ def get_avg_time_mapping(model_name):
 def generate_and_save_graph(task_total_time, order_no, model_name):
     avg_mapping = get_avg_time_mapping(model_name)
     fig, ax = plt.subplots(figsize=(12, 8))
-    bars = ax.barh(task_total_time["내용"], task_total_time["워킹데이 소요 시간"], color="skyblue")
+    bars = ax.barh(
+        task_total_time["내용"], task_total_time["워킹데이 소요 시간"], color="skyblue"
+    )
     ax.set_yticks(range(len(task_total_time)))
     ax.set_yticklabels(
         [
-            f"{task} (평균: {format_hours(avg_mapping[task])})" if task in avg_mapping else task
+            (
+                f"{task} (평균: {format_hours(avg_mapping[task])})"
+                if task in avg_mapping
+                else task
+            )
             for task in task_total_time["내용"]
         ],
         fontsize=10,
@@ -671,11 +758,15 @@ def generate_and_save_graph(task_total_time, order_no, model_name):
 
 def generate_legend_chart(task_total_time, order_no, model_name):
     avg_mapping = get_avg_time_mapping(model_name)
-    task_total_time["작업 분류"] = task_total_time["내용"].apply(lambda x: classify_task(x, model_name))
+    task_total_time["작업 분류"] = task_total_time["내용"].apply(
+        lambda x: classify_task(x, model_name)
+    )
     task_total_time_sorted = task_total_time.sort_values(
         by=["작업 분류", "워킹데이 소요 시간"], ascending=[True, False]
     )
-    category_totals = task_total_time_sorted.groupby("작업 분류")["워킹데이 소요 시간"].sum()
+    category_totals = task_total_time_sorted.groupby("작업 분류")[
+        "워킹데이 소요 시간"
+    ].sum()
     total_time = category_totals.sum()
     category_colors = {
         "기구": "blue",
@@ -685,15 +776,31 @@ def generate_legend_chart(task_total_time, order_no, model_name):
         "마무리": "red",
         "기타": "gray",
     }
-    legend_elements = [Patch(facecolor="black", edgecolor="black", label=f"총 소요시간: {format_hours(total_time)}")]
+    legend_elements = [
+        Patch(
+            facecolor="black",
+            edgecolor="black",
+            label=f"총 소요시간: {format_hours(total_time)}",
+        )
+    ]
     for category, color in category_colors.items():
         if category in category_totals:
             category_time = category_totals[category]
             legend_elements.append(
-                Patch(facecolor=color, edgecolor="black", label=f"{category} (총 {format_hours(category_time)})")
+                Patch(
+                    facecolor=color,
+                    edgecolor="black",
+                    label=f"{category} (총 {format_hours(category_time)})",
+                )
             )
-            for _, row in task_total_time_sorted[task_total_time_sorted["작업 분류"] == category].iterrows():
-                avg_str = f" (평균: {format_hours(avg_mapping[row['내용']])})" if row["내용"] in avg_mapping else ""
+            for _, row in task_total_time_sorted[
+                task_total_time_sorted["작업 분류"] == category
+            ].iterrows():
+                avg_str = (
+                    f" (평균: {format_hours(avg_mapping[row['내용']])})"
+                    if row["내용"] in avg_mapping
+                    else ""
+                )
                 legend_elements.append(
                     Patch(
                         facecolor="white",
@@ -734,7 +841,13 @@ def generate_and_save_graph_wd(task_total_time, df, order_no, model_name):
         for i, (_, row) in enumerate(group.iterrows()):
             start_time = row["시작 시간"] + (i * time_offset)
             end_time = row["완료 시간"] + (i * time_offset)
-            plt.plot([start_time, end_time], [index, index], color=colors[index % len(colors)], linewidth=3, marker="o")
+            plt.plot(
+                [start_time, end_time],
+                [index, index],
+                color=colors[index % len(colors)],
+                linewidth=3,
+                marker="o",
+            )
         plt.text(
             group["완료 시간"].max() + pd.Timedelta(hours=2),
             index,
@@ -761,7 +874,9 @@ def generate_and_save_graph_wd(task_total_time, df, order_no, model_name):
 # Utility Functions
 def fetch_data_from_sheets(spreadsheet_id, sheet_range):
     result = api_call_with_backoff(
-        sheets_service.spreadsheets().values().get, spreadsheetId=spreadsheet_id, range=sheet_range
+        sheets_service.spreadsheets().values().get,
+        spreadsheetId=spreadsheet_id,
+        range=sheet_range,
     ).execute()
     values = result.get("values", [])
     if not values or len(values) <= 7:
@@ -771,7 +886,10 @@ def fetch_data_from_sheets(spreadsheet_id, sheet_range):
     max_cols = max(len(header), max((len(row) for row in data), default=0))
     if max_cols > len(header):
         header.extend([""] * (max_cols - len(header)))
-    adjusted_data = [row + [""] * (max_cols - len(row)) if len(row) < max_cols else row[:max_cols] for row in data]
+    adjusted_data = [
+        row + [""] * (max_cols - len(row)) if len(row) < max_cols else row[:max_cols]
+        for row in data
+    ]
     df_raw = pd.DataFrame(adjusted_data, columns=header[:max_cols])
     needed_cols = ["내용", "시작 시간", "완료 시간", "진행율"]
     if not all(col in df_raw.columns for col in needed_cols):
@@ -782,7 +900,12 @@ def fetch_data_from_sheets(spreadsheet_id, sheet_range):
     # 진행율 float 변환에 방어코드 및 로깅 추가
     try:
         df_use["진행율"] = (
-            df_use["진행율"].astype(str).str.replace("%", "").str.strip().replace("", np.nan).astype(float)
+            df_use["진행율"]
+            .astype(str)
+            .str.replace("%", "")
+            .str.strip()
+            .replace("", np.nan)
+            .astype(float)
         )
     except Exception as e:
         print(f"[진행율 변환 오류] {e}")
@@ -792,11 +915,19 @@ def fetch_data_from_sheets(spreadsheet_id, sheet_range):
 
 
 def fetch_info_board_extended(spreadsheet_id):
-    ranges = [("정보판!D4", "model_name"), ("정보판!B5", "mech_partner"), ("정보판!D5", "elec_partner")]
+    ranges = [
+        ("정보판!D4", "model_name"),
+        ("정보판!B5", "mech_partner"),
+        ("정보판!D5", "elec_partner"),
+    ]
     batch_request = (
         sheets_service.spreadsheets()
         .values()
-        .batchGet(spreadsheetId=spreadsheet_id, ranges=[rng for rng, _ in ranges], valueRenderOption="FORMATTED_VALUE")
+        .batchGet(
+            spreadsheetId=spreadsheet_id,
+            ranges=[rng for rng, _ in ranges],
+            valueRenderOption="FORMATTED_VALUE",
+        )
     )
     result = api_call_with_backoff(batch_request.execute)
     results = {}
@@ -806,16 +937,26 @@ def fetch_info_board_extended(spreadsheet_id):
     print(
         f"📌 [디버깅] 모델명: {results['model_name']}, 기구협력사: {results['mech_partner']}, 전장협력사: {results['elec_partner']}"
     )
-    return results["model_name"] or "NoValue", results["mech_partner"], results["elec_partner"]
+    return (
+        results["model_name"] or "NoValue",
+        results["mech_partner"],
+        results["elec_partner"],
+    )
 
 
 def batch_update_spreadsheet(spreadsheet_id, requests):
     body = {"requests": requests}
-    api_call_with_backoff(sheets_service.spreadsheets().batchUpdate, spreadsheetId=spreadsheet_id, body=body).execute()
+    api_call_with_backoff(
+        sheets_service.spreadsheets().batchUpdate,
+        spreadsheetId=spreadsheet_id,
+        body=body,
+    ).execute()
 
 
 # --- 수정된 업데이트 함수 (sheet_values 전달) ---
-def update_spreadsheet_with_product_name(spreadsheet_id, order_no, product_name, sheet_values):
+def update_spreadsheet_with_product_name(
+    spreadsheet_id, order_no, product_name, sheet_values
+):
     if not product_name or product_name == "NoValue":
         print(f"⚠️ 제품명이 비어 있음 (Row: {order_no})")
         return
@@ -835,17 +976,27 @@ def update_spreadsheet_with_product_name(spreadsheet_id, order_no, product_name,
                             "startColumnIndex": 3,
                             "endColumnIndex": 4,
                         },
-                        "rows": [{"values": [{"userEnteredValue": {"stringValue": product_name}}]}],
+                        "rows": [
+                            {
+                                "values": [
+                                    {"userEnteredValue": {"stringValue": product_name}}
+                                ]
+                            }
+                        ],
                         "fields": "userEnteredValue",
                     }
                 }
             )
     if requests:
         batch_update_spreadsheet(spreadsheet_id, requests)
-        print(f"✅ {TARGET_SHEET_NAME}에서 Order No '{order_no}'의 제품명이 업데이트되었습니다.")
+        print(
+            f"✅ {TARGET_SHEET_NAME}에서 Order No '{order_no}'의 제품명이 업데이트되었습니다."
+        )
 
 
-def update_spreadsheet_with_total_time(spreadsheet_id, order_no, total_time, sheet_values):
+def update_spreadsheet_with_total_time(
+    spreadsheet_id, order_no, total_time, sheet_values
+):
     if not sheet_values:
         print("스프레드시트 데이터를 가져올 수 없습니다.")
         return
@@ -868,7 +1019,9 @@ def update_spreadsheet_with_total_time(spreadsheet_id, order_no, total_time, she
     print(f"모델 '{order_no}'의 총 소요시간이 업데이트되었습니다.")
 
 
-def update_spreadsheet_with_mechanical_time(spreadsheet_id, order_no, mechanical_time, sheet_values):
+def update_spreadsheet_with_mechanical_time(
+    spreadsheet_id, order_no, mechanical_time, sheet_values
+):
     if not sheet_values:
         print("스프레드시트 데이터를 가져올 수 없습니다.")
         return
@@ -891,7 +1044,9 @@ def update_spreadsheet_with_mechanical_time(spreadsheet_id, order_no, mechanical
     print(f"모델 '{order_no}'의 기구작업 소요시간이 업데이트되었습니다.")
 
 
-def update_spreadsheet_with_electrical_time(spreadsheet_id, order_no, electrical_time, sheet_values):
+def update_spreadsheet_with_electrical_time(
+    spreadsheet_id, order_no, electrical_time, sheet_values
+):
     if not sheet_values:
         print("스프레드시트 데이터를 가져올 수 없습니다.")
         return
@@ -914,7 +1069,9 @@ def update_spreadsheet_with_electrical_time(spreadsheet_id, order_no, electrical
     print(f"모델 '{order_no}'의 전장 작업 시간이 업데이트되었습니다.")
 
 
-def update_spreadsheet_with_inspection_time(spreadsheet_id, order_no, inspection_time, sheet_values):
+def update_spreadsheet_with_inspection_time(
+    spreadsheet_id, order_no, inspection_time, sheet_values
+):
     if not sheet_values:
         print("스프레드시트 데이터를 가져올 수 없습니다.")
         return
@@ -937,7 +1094,9 @@ def update_spreadsheet_with_inspection_time(spreadsheet_id, order_no, inspection
     print(f"모델 '{order_no}'의 검사 작업 시간이 업데이트되었습니다.")
 
 
-def update_spreadsheet_with_finishing_time(spreadsheet_id, order_no, finishing_time, sheet_values):
+def update_spreadsheet_with_finishing_time(
+    spreadsheet_id, order_no, finishing_time, sheet_values
+):
     if not sheet_values:
         print("스프레드시트 데이터를 가져올 수 없습니다.")
         return
@@ -981,7 +1140,11 @@ def update_spreadsheet_with_working_hours(spreadsheet_id, order_no, link, sheet_
                         "rows": [
                             {
                                 "values": [
-                                    {"userEnteredValue": {"formulaValue": f'=HYPERLINK("{link}", "Working Hours")'}}
+                                    {
+                                        "userEnteredValue": {
+                                            "formulaValue": f'=HYPERLINK("{link}", "Working Hours")'
+                                        }
+                                    }
                                 ]
                             }
                         ],
@@ -1016,7 +1179,11 @@ def update_spreadsheet_with_legend(spreadsheet_id, order_no, link, sheet_values)
                         "rows": [
                             {
                                 "values": [
-                                    {"userEnteredValue": {"formulaValue": f'=HYPERLINK("{link}", "Legend Chart")'}}
+                                    {
+                                        "userEnteredValue": {
+                                            "formulaValue": f'=HYPERLINK("{link}", "Legend Chart")'
+                                        }
+                                    }
                                 ]
                             }
                         ],
@@ -1049,7 +1216,15 @@ def update_spreadsheet_with_wd_graph(spreadsheet_id, order_no, link, sheet_value
                             "endColumnIndex": 29,
                         },
                         "rows": [
-                            {"values": [{"userEnteredValue": {"formulaValue": f'=HYPERLINK("{link}", "WD Chart")'}}]}
+                            {
+                                "values": [
+                                    {
+                                        "userEnteredValue": {
+                                            "formulaValue": f'=HYPERLINK("{link}", "WD Chart")'
+                                        }
+                                    }
+                                ]
+                            }
                         ],
                         "fields": "userEnteredValue",
                     }
@@ -1069,7 +1244,9 @@ def batch_update_spreadsheet_values(spreadsheet_id, data):
             {
                 "updateCells": {
                     "range": range_spec,
-                    "rows": [{"values": [{"userEnteredValue": {"stringValue": str(value)}}]}],
+                    "rows": [
+                        {"values": [{"userEnteredValue": {"stringValue": str(value)}}]}
+                    ],
                     "fields": "userEnteredValue",
                 }
             }
@@ -1080,26 +1257,46 @@ def batch_update_spreadsheet_values(spreadsheet_id, data):
 
 # NaN & Overtime Stats
 def compute_occurrence_rates(
-    df, task_total_time, avg_mapping, model_name, tolerance=2, mech_partner=None, elec_partner=None
+    df,
+    task_total_time,
+    avg_mapping,
+    model_name,
+    tolerance=2,
+    mech_partner=None,
+    elec_partner=None,
 ):
     categories = ["기구", "TMS_반제품", "전장", "검사", "마무리", "기타"]
     occurrence_stats = {
-        cat: {"total_count": 0, "nan_count": 0, "ot_count": 0, "nan_tasks": [], "ot_task_details": []}
+        cat: {
+            "total_count": 0,
+            "nan_count": 0,
+            "ot_count": 0,
+            "nan_tasks": [],
+            "ot_task_details": [],
+        }
         for cat in categories
     }
-    partner_stats = {"mech": {"nan_count": 0, "ot_count": 0}, "elec": {"nan_count": 0, "ot_count": 0}}
+    partner_stats = {
+        "mech": {"nan_count": 0, "ot_count": 0},
+        "elec": {"nan_count": 0, "ot_count": 0},
+    }
     df["진행율"] = pd.to_numeric(df["진행율"], errors="coerce")
     completed_tasks = set(
-        df[(pd.to_numeric(df["진행율"], errors="coerce") >= 100) | (df["시작 시간"].notna() & df["완료 시간"].notna())][
-            "내용"
-        ]
+        df[
+            (pd.to_numeric(df["진행율"], errors="coerce") >= 100)
+            | (df["시작 시간"].notna() & df["완료 시간"].notna())
+        ]["내용"]
     )
     nan_task_checked = set()
     for _, row in df.iterrows():
         task_name = row["내용"]
         category = classify_task(task_name, model_name)
         occurrence_stats[category]["total_count"] += 1
-        is_nan = pd.isna(row["시작 시간"]) or pd.isna(row["완료 시간"]) or pd.isna(row["진행율"])
+        is_nan = (
+            pd.isna(row["시작 시간"])
+            or pd.isna(row["완료 시간"])
+            or pd.isna(row["진행율"])
+        )
         if is_nan:
             if task_name in completed_tasks:
                 continue
@@ -1116,9 +1313,14 @@ def compute_occurrence_rates(
         task_name = row["내용"]
         actual_hours = row["워킹데이 소요 시간"]
         category = classify_task(task_name, model_name)
-        if task_name in avg_mapping and actual_hours > avg_mapping[task_name] + tolerance:
+        if (
+            task_name in avg_mapping
+            and actual_hours > avg_mapping[task_name] + tolerance
+        ):
             occurrence_stats[category]["ot_count"] += 1
-            occurrence_stats[category]["ot_task_details"].append((task_name, actual_hours))
+            occurrence_stats[category]["ot_task_details"].append(
+                (task_name, actual_hours)
+            )
             if category == "기구":
                 partner_stats["mech"]["ot_count"] += 1
             elif category == "전장":
@@ -1129,25 +1331,41 @@ def compute_occurrence_rates(
 # Bar Chart Generation
 def generate_nan_bar_charts(all_results):
     partner_stats = {}
-    for _, _, mech_partner_raw, elec_partner_raw, occurrence_stats, partner_stats_individual, _, _, _ in all_results:
+    for (
+        _,
+        _,
+        mech_partner_raw,
+        elec_partner_raw,
+        occurrence_stats,
+        partner_stats_individual,
+        _,
+        _,
+        _,
+    ) in all_results:
         mech_partner = "TMS(m)" if mech_partner_raw == "TMS" else mech_partner_raw
         elec_partner = "TMS(e)" if elec_partner_raw == "TMS" else elec_partner_raw
         mech_nan = partner_stats_individual.get("mech", {}).get("nan_count", 0)
         mech_total = occurrence_stats.get("기구", {}).get("total_count", 0)
         if mech_partner:
-            partner_stats[mech_partner] = partner_stats.get(mech_partner, {"nan_count": 0, "total_tasks": 0})
+            partner_stats[mech_partner] = partner_stats.get(
+                mech_partner, {"nan_count": 0, "total_tasks": 0}
+            )
             partner_stats[mech_partner]["nan_count"] += mech_nan
             partner_stats[mech_partner]["total_tasks"] += mech_total
         tms_nan = occurrence_stats.get("TMS_반제품", {}).get("nan_count", 0)
         tms_total = occurrence_stats.get("TMS_반제품", {}).get("total_count", 0)
         if tms_total > 0:
-            partner_stats["TMS_반제품"] = partner_stats.get("TMS_반제품", {"nan_count": 0, "total_tasks": 0})
+            partner_stats["TMS_반제품"] = partner_stats.get(
+                "TMS_반제품", {"nan_count": 0, "total_tasks": 0}
+            )
             partner_stats["TMS_반제품"]["nan_count"] += tms_nan
             partner_stats["TMS_반제품"]["total_tasks"] += tms_total
         elec_nan = partner_stats_individual.get("elec", {}).get("nan_count", 0)
         elec_total = occurrence_stats.get("전장", {}).get("total_count", 0)
         if elec_partner:
-            partner_stats[elec_partner] = partner_stats.get(elec_partner, {"nan_count": 0, "total_tasks": 0})
+            partner_stats[elec_partner] = partner_stats.get(
+                elec_partner, {"nan_count": 0, "total_tasks": 0}
+            )
             partner_stats[elec_partner]["nan_count"] += elec_nan
             partner_stats[elec_partner]["total_tasks"] += elec_total
     nan_counts = [stats["nan_count"] for stats in partner_stats.values()]
@@ -1157,7 +1375,11 @@ def generate_nan_bar_charts(all_results):
         return None, None
     labels = list(partner_stats.keys())
     nan_ratios = [
-        stats["nan_count"] / stats["total_tasks"] * 100 if stats["total_tasks"] > 0 else 0
+        (
+            stats["nan_count"] / stats["total_tasks"] * 100
+            if stats["total_tasks"] > 0
+            else 0
+        )
         for stats in partner_stats.values()
     ]
     plt.figure(figsize=(10, 6))
@@ -1289,58 +1511,88 @@ def build_combined_email_body(
     # NOVA 트렌드 그래프 섹션을 대시보드 링크 바로 뒤에 추가
     nova_links = []
     if heatmap_url:
-        nova_links.append(f'📅 주간 협력사 NaN 히트맵: <a href="{heatmap_url}" target="_blank">그래프 보기</a>')
+        nova_links.append(
+            f'📅 주간 협력사 NaN 히트맵: <a href="{heatmap_url}" target="_blank">그래프 보기</a>'
+        )
 
     # 월간 히트맵 링크들 (Google Drive에서 최신 파일 검색)
     if not monthly_partner_url:
         # Google Drive에서 최신 월간 협력사 히트맵 파일 검색
         try:
             query = f"'{DRIVE_FOLDER_ID}' in parents and name contains 'monthly_partner_nan_heatmap_'"
-            files = drive_service.files().list(q=query, fields="files(id, name)").execute().get("files", [])
-            
+            files = (
+                drive_service.files()
+                .list(q=query, fields="files(id, name)")
+                .execute()
+                .get("files", [])
+            )
+
             if files:
                 # 파일명에서 날짜 추출하여 최신 파일 선택
-                latest_partner_file = max(files, key=lambda x: x['name'].split('_')[-1].replace('.png', ''))
+                latest_partner_file = max(
+                    files, key=lambda x: x["name"].split("_")[-1].replace(".png", "")
+                )
                 monthly_partner_url = f"https://drive.google.com/uc?export=view&id={latest_partner_file['id']}"
-                print(f"📁 Drive에서 최신 월간 협력사 히트맵 발견: {latest_partner_file['name']}")
+                print(
+                    f"📁 Drive에서 최신 월간 협력사 히트맵 발견: {latest_partner_file['name']}"
+                )
                 print(f"✅ 월간 협력사 히트맵 URL: {monthly_partner_url}")
             else:
                 print("⚠️ Drive에서 월간 협력사 히트맵을 찾을 수 없습니다.")
         except Exception as e:
             print(f"❌ Drive 검색 오류 (협력사): {e}")
-        
+
         # Drive에서 찾지 못하면 환경변수 기본값 사용
         if not monthly_partner_url:
-            monthly_partner_url = os.getenv("MONTHLY_PARTNER_HEATMAP_URL", "https://drive.google.com/uc?export=view&id=1Bh1iUvPIQfsQ_wUTs_DOln0cZGY_hHL7")
+            monthly_partner_url = os.getenv(
+                "MONTHLY_PARTNER_HEATMAP_URL",
+                "https://drive.google.com/uc?export=view&id=1Bh1iUvPIQfsQ_wUTs_DOln0cZGY_hHL7",
+            )
             print(f"⚠️ Drive 검색 실패, 환경변수 URL 사용: {monthly_partner_url}")
 
     if not monthly_model_url:
         # Google Drive에서 최신 월간 모델 히트맵 파일 검색
         try:
             query = f"'{DRIVE_FOLDER_ID}' in parents and name contains 'monthly_model_nan_heatmap_'"
-            files = drive_service.files().list(q=query, fields="files(id, name)").execute().get("files", [])
-            
+            files = (
+                drive_service.files()
+                .list(q=query, fields="files(id, name)")
+                .execute()
+                .get("files", [])
+            )
+
             if files:
                 # 파일명에서 날짜 추출하여 최신 파일 선택
-                latest_model_file = max(files, key=lambda x: x['name'].split('_')[-1].replace('.png', ''))
+                latest_model_file = max(
+                    files, key=lambda x: x["name"].split("_")[-1].replace(".png", "")
+                )
                 monthly_model_url = f"https://drive.google.com/uc?export=view&id={latest_model_file['id']}"
-                print(f"📁 Drive에서 최신 월간 모델 히트맵 발견: {latest_model_file['name']}")
+                print(
+                    f"📁 Drive에서 최신 월간 모델 히트맵 발견: {latest_model_file['name']}"
+                )
                 print(f"✅ 월간 모델 히트맵 URL: {monthly_model_url}")
             else:
                 print("⚠️ Drive에서 월간 모델 히트맵을 찾을 수 없습니다.")
         except Exception as e:
             print(f"❌ Drive 검색 오류 (모델): {e}")
-        
+
         # Drive에서 찾지 못하면 환경변수 기본값 사용
         if not monthly_model_url:
-            monthly_model_url = os.getenv("MONTHLY_MODEL_HEATMAP_URL", "https://drive.google.com/uc?export=view&id=1DGOJCR5Ie5VGgMMcgIEQc0D45z8-uuIG")
+            monthly_model_url = os.getenv(
+                "MONTHLY_MODEL_HEATMAP_URL",
+                "https://drive.google.com/uc?export=view&id=1DGOJCR5Ie5VGgMMcgIEQc0D45z8-uuIG",
+            )
             print(f"⚠️ Drive 검색 실패, 환경변수 URL 사용: {monthly_model_url}")
 
     # 링크가 있는 경우에만 추가
     if monthly_partner_url:
-        nova_links.append(f'🗓️ 월간 협력사 NaN 히트맵: <a href="{monthly_partner_url}" target="_blank">그래프 보기</a>')
+        nova_links.append(
+            f'🗓️ 월간 협력사 NaN 히트맵: <a href="{monthly_partner_url}" target="_blank">그래프 보기</a>'
+        )
     if monthly_model_url:
-        nova_links.append(f'📈 월간 모델별 NaN 히트맵: <a href="{monthly_model_url}" target="_blank">그래프 보기</a>')
+        nova_links.append(
+            f'📈 월간 모델별 NaN 히트맵: <a href="{monthly_model_url}" target="_blank">그래프 보기</a>'
+        )
 
     if nova_links:
         lines.append("<p><strong>📊트렌드 지표</strong></p><ul>")
@@ -1491,10 +1743,18 @@ def build_combined_email_body(
         spreadsheet_url,
         progress_summary,
     ) in all_results:
-        lines.append(f"<details><summary><strong>📍 Order: {order_no}, 모델명: {model_name}</strong></summary>")
-        lines.append(f"<p>🏭 기구협력사: {mech_partner}, ⚡ 전장협력사: {elec_partner}</p>")
-        lines.append(f'<p>📋 <strong>모델 스프레드시트</strong>: <a href="{spreadsheet_url}">바로가기</a></p>')
-        lines.append(f'<p>📊 대시보드 링크: <a href="{dashboard_link}">대시보드 바로가기</a></p>')
+        lines.append(
+            f"<details><summary><strong>📍 Order: {order_no}, 모델명: {model_name}</strong></summary>"
+        )
+        lines.append(
+            f"<p>🏭 기구협력사: {mech_partner}, ⚡ 전장협력사: {elec_partner}</p>"
+        )
+        lines.append(
+            f'<p>📋 <strong>모델 스프레드시트</strong>: <a href="{spreadsheet_url}">바로가기</a></p>'
+        )
+        lines.append(
+            f'<p>📊 대시보드 링크: <a href="{dashboard_link}">대시보드 바로가기</a></p>'
+        )
         lines.append(
             f"<p>📊 그래프 링크:</p><ul>"
             f'<li>Working Hours: <a href="{links["working_hours"]}">바로가기</a></li>'
@@ -1503,10 +1763,19 @@ def build_combined_email_body(
         )
         for category in ["기구", "TMS_반제품", "전장", "검사", "마무리", "기타"]:
             stats = occurrence_stats.get(
-                category, {"total_count": 0, "nan_count": 0, "ot_count": 0, "nan_tasks": [], "ot_task_details": []}
+                category,
+                {
+                    "total_count": 0,
+                    "nan_count": 0,
+                    "ot_count": 0,
+                    "nan_tasks": [],
+                    "ot_task_details": [],
+                },
             )
             total_count = stats["total_count"]
-            lines.append(f"<p><b>🔹 {category} 작업</b><br> - 전체 작업 수: {total_count} 건<br>")
+            lines.append(
+                f"<p><b>🔹 {category} 작업</b><br> - 전체 작업 수: {total_count} 건<br>"
+            )
             nan_count = stats["nan_count"]
             nan_ratio = (nan_count / total_count) * 100 if total_count > 0 else 0
             lines.append(
@@ -1521,7 +1790,10 @@ def build_combined_email_body(
             )
             if ot_count > 0:
                 lines.append(
-                    "".join(f"   - {task} {format_hours(hours)}<br>" for task, hours in stats["ot_task_details"])
+                    "".join(
+                        f"   - {task} {format_hours(hours)}<br>"
+                        for task, hours in stats["ot_task_details"]
+                    )
                 )
             lines.append("</p>")
         lines.append("</details><hr>")
@@ -1547,7 +1819,9 @@ def send_occurrence_email(subject, body_text, graph_files=None, dashboard_file=N
             try:
                 with open(graph_file, "rb") as f:
                     img = MIMEImage(f.read())
-                    img.add_header("Content-Disposition", "attachment", filename=graph_file)
+                    img.add_header(
+                        "Content-Disposition", "attachment", filename=graph_file
+                    )
                     msg.attach(img)
                 print(f"✅ 그래프 파일 첨부 완료: {graph_file}")
             except Exception as e:
@@ -1556,17 +1830,23 @@ def send_occurrence_email(subject, body_text, graph_files=None, dashboard_file=N
         try:
             with open(dashboard_file, "rb") as f:
                 html_attachment = MIMEApplication(f.read(), _subtype="html")
-                html_attachment.add_header("Content-Disposition", "attachment", filename=dashboard_file)
+                html_attachment.add_header(
+                    "Content-Disposition", "attachment", filename=dashboard_file
+                )
                 msg.attach(html_attachment)
             print(f"📄 [이메일 첨부] HTML 대시보드 파일 {dashboard_file} 추가 완료")
         except Exception as e:
-            print(f"❌ [이메일 첨부 오류] HTML 대시보드 파일 {dashboard_file} 추가 실패: {e}")
+            print(
+                f"❌ [이메일 첨부 오류] HTML 대시보드 파일 {dashboard_file} 추가 실패: {e}"
+            )
     try:
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
             server.starttls(context=context)
             server.login(EMAIL_ADDRESS, EMAIL_PASS)
             server.send_message(msg)
-        print(f"📧 [이메일 발송] {RECEIVER_EMAIL}로 통합 HTML 알림 메일 및 첨부파일 전송 완료")
+        print(
+            f"📧 [이메일 발송] {RECEIVER_EMAIL}로 통합 HTML 알림 메일 및 첨부파일 전송 완료"
+        )
     except Exception as e:
         print(f"❌ [이메일 발송 실패]: {e}")
 
@@ -1664,7 +1944,9 @@ def cross_check_data_integrity(all_results):
         if category in category_breakdown:
             nan_count = category_breakdown[category]["nan"]
             total_count = sum(
-                stats.get("total_count", 0) for result in all_results for stats in [result[4].get(category, {})]
+                stats.get("total_count", 0)
+                for result in all_results
+                for stats in [result[4].get(category, {})]
             )
 
             if total_count > 0:
@@ -1679,7 +1961,10 @@ def cross_check_data_integrity(all_results):
         [
             r
             for r in all_results
-            if any(stats.get("nan_count", 0) > 0 or stats.get("ot_count", 0) > 0 for stats in r[4].values())
+            if any(
+                stats.get("nan_count", 0) > 0 or stats.get("ot_count", 0) > 0
+                for stats in r[4].values()
+            )
         ]
     )
 
@@ -1721,11 +2006,17 @@ def send_nan_alert_to_kakao(all_results):
     total_ot = check_report["summary"]["total_ot_by_category"]
 
     # 기존 방식과 비교 (디버깅용)
-    original_nan = sum(stats["nan_count"] for result in all_results for stats in result[4].values())
-    original_ot = sum(stats["ot_count"] for result in all_results for stats in result[4].values())
+    original_nan = sum(
+        stats["nan_count"] for result in all_results for stats in result[4].values()
+    )
+    original_ot = sum(
+        stats["ot_count"] for result in all_results for stats in result[4].values()
+    )
 
     if total_nan != original_nan or total_ot != original_ot:
-        print(f"⚠️ 계산 방식 차이 발견: NaN({total_nan}vs{original_nan}), OT({total_ot}vs{original_ot})")
+        print(
+            f"⚠️ 계산 방식 차이 발견: NaN({total_nan}vs{original_nan}), OT({total_ot}vs{original_ot})"
+        )
         # 기존 방식 사용 (안전)
         total_nan = original_nan
         total_ot = original_ot
@@ -1772,7 +2063,11 @@ def send_nan_alert_to_kakao(all_results):
 
 def refresh_access_token():
     url = "https://kauth.kakao.com/oauth/token"
-    data = {"grant_type": "refresh_token", "client_id": REST_API_KEY, "refresh_token": REFRESH_TOKEN}
+    data = {
+        "grant_type": "refresh_token",
+        "client_id": REST_API_KEY,
+        "refresh_token": REFRESH_TOKEN,
+    }
     try:
         response = requests.post(url, data=data)
         response.raise_for_status()
@@ -1797,16 +2092,26 @@ def send_kakao_message(text, access_token=None):
             print("❌ [오류] KAKAO_ACCESS_TOKEN이 정의되지 않았습니다.")
             return False
     url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
-    headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/x-www-form-urlencoded"}
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
     data = {
         "template_object": json.dumps(
-            {"object_type": "text", "text": text, "link": {"web_url": "", "mobile_web_url": ""}}, ensure_ascii=False
+            {
+                "object_type": "text",
+                "text": text,
+                "link": {"web_url": "", "mobile_web_url": ""},
+            },
+            ensure_ascii=False,
         )
     }
     try:
         response = requests.post(url, headers=headers, data=data)
         response.raise_for_status()
-        print(f"✅ 카카오톡 메시지 전송 성공! (시간: {datetime.now().strftime('%H:%M:%S')})")
+        print(
+            f"✅ 카카오톡 메시지 전송 성공! (시간: {datetime.now().strftime('%H:%M:%S')})"
+        )
         return True
     except Exception as e:
         print(f"❌ [카카오톡 메시지 전송 실패]: {e}")
@@ -1825,10 +2130,17 @@ def upload_to_github(file_path):
         content = base64.b64encode(file.read()).decode("utf-8")
     file_name = os.path.basename(file_path)
     url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/public/{file_name}"
-    headers = {"Authorization": f"Bearer {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+    headers = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+    }
     response = requests.get(url, headers=headers)
     sha = response.json().get("sha", "")
-    data = {"message": f"자동 업로드: {file_name}", "content": content, "branch": GITHUB_BRANCH}
+    data = {
+        "message": f"자동 업로드: {file_name}",
+        "content": content,
+        "branch": GITHUB_BRANCH,
+    }
     if sha:
         data["sha"] = sha
     response = requests.put(url, headers=headers, json=data)
@@ -1872,8 +2184,12 @@ def collect_and_process_data():
         print("🚨 [오류] 추출된 스프레드시트 ID가 없습니다.")
         return []
     target_ids = linked_spreadsheet_ids[:limit] if limit > 0 else linked_spreadsheet_ids
-    print(f"총 {len(linked_spreadsheet_ids)}개 중 처음 {len(target_ids)}개만 처리합니다.")
-    sheet_values = fetch_entire_sheet_values(spreadsheet_id, f"'{TARGET_SHEET_NAME}'!A:AA")
+    print(
+        f"총 {len(linked_spreadsheet_ids)}개 중 처음 {len(target_ids)}개만 처리합니다."
+    )
+    sheet_values = fetch_entire_sheet_values(
+        spreadsheet_id, f"'{TARGET_SHEET_NAME}'!A:AA"
+    )
     all_results = []
     current_weekday = datetime.today().weekday()
 
@@ -1883,7 +2199,9 @@ def collect_and_process_data():
     if GENERATE_GRAPHS == "true":
         # 강제로 그래프 생성
         generate_graphs_today = True
-        print("✅ GENERATE_GRAPHS=true: 강제로 그래프 생성 및 스프레드시트 업데이트 진행")
+        print(
+            "✅ GENERATE_GRAPHS=true: 강제로 그래프 생성 및 스프레드시트 업데이트 진행"
+        )
     elif GENERATE_GRAPHS == "false":
         # 그래프 생성 비활성화
         generate_graphs_today = False
@@ -1897,46 +2215,72 @@ def collect_and_process_data():
         else:
             print("✅ 오늘은 월요일/금요일: 그래프 생성 및 스프레드시트 업데이트 진행")
     else:
-        print("⛔ 오늘은 월요일/금요일이 아니므로 그래프 생성 및 업데이트는 생략됩니다.")
+        print(
+            "⛔ 오늘은 월요일/금요일이 아니므로 그래프 생성 및 업데이트는 생략됩니다."
+        )
 
-    print(f"📊 그래프 생성 설정: GENERATE_GRAPHS={GENERATE_GRAPHS}, 실제 생성 여부: {generate_graphs_today}")
+    print(
+        f"📊 그래프 생성 설정: GENERATE_GRAPHS={GENERATE_GRAPHS}, 실제 생성 여부: {generate_graphs_today}"
+    )
 
     def process_batch(batch_ids):
         import time
+
         for idx, target_spreadsheet_id in enumerate(batch_ids, 1):
             try:
                 print(f"--- 🚀 처리 중: {idx}/{len(batch_ids)} (Batch) ---")
-                
+
                 # Rate Limit 방지를 위한 지연 (첫 번째가 아닌 경우)
                 if idx > 1:
                     print("⏱️ Rate Limit 방지를 위해 3초 대기...")
                     time.sleep(3)
-                
+
                 df = fetch_data_from_sheets(target_spreadsheet_id, WORKSHEET_RANGE)
-                product_name, mech_partner, elec_partner = fetch_info_board_extended(target_spreadsheet_id)
+                product_name, mech_partner, elec_partner = fetch_info_board_extended(
+                    target_spreadsheet_id
+                )
                 print(f"📌 Processing Model: {product_name}")
                 task_total_time = process_data(df, product_name)
-                task_total_time["작업 분류"] = task_total_time["내용"].apply(lambda x: classify_task(x, product_name))
+                task_total_time["작업 분류"] = task_total_time["내용"].apply(
+                    lambda x: classify_task(x, product_name)
+                )
                 order_no = get_spreadsheet_title(target_spreadsheet_id)
                 print(f"📌 Processing Order No: {order_no}")
                 spreadsheet_url = f"https://docs.google.com/spreadsheets/d/{target_spreadsheet_id}/edit"
-                update_spreadsheet_with_product_name(spreadsheet_id, order_no, product_name, sheet_values)
+                update_spreadsheet_with_product_name(
+                    spreadsheet_id, order_no, product_name, sheet_values
+                )
                 if generate_graphs_today:
                     # 그래프 파일들을 먼저 생성
-                    working_hours_file = generate_and_save_graph(task_total_time, order_no, product_name)
-                    legend_file = generate_legend_chart(task_total_time, order_no, product_name)
-                    wd_file = generate_and_save_graph_wd(task_total_time, df, order_no, product_name)
+                    working_hours_file = generate_and_save_graph(
+                        task_total_time, order_no, product_name
+                    )
+                    legend_file = generate_legend_chart(
+                        task_total_time, order_no, product_name
+                    )
+                    wd_file = generate_and_save_graph_wd(
+                        task_total_time, df, order_no, product_name
+                    )
 
                     # Drive에 업로드하고 링크 업데이트
                     links = {
                         "working_hours": update_spreadsheet_with_working_hours(
-                            spreadsheet_id, order_no, upload_to_drive(working_hours_file), sheet_values
+                            spreadsheet_id,
+                            order_no,
+                            upload_to_drive(working_hours_file),
+                            sheet_values,
                         ),
                         "legend": update_spreadsheet_with_legend(
-                            spreadsheet_id, order_no, upload_to_drive(legend_file), sheet_values
+                            spreadsheet_id,
+                            order_no,
+                            upload_to_drive(legend_file),
+                            sheet_values,
                         ),
                         "wd": update_spreadsheet_with_wd_graph(
-                            spreadsheet_id, order_no, upload_to_drive(wd_file), sheet_values
+                            spreadsheet_id,
+                            order_no,
+                            upload_to_drive(wd_file),
+                            sheet_values,
                         ),
                     }
 
@@ -1954,31 +2298,47 @@ def collect_and_process_data():
                 progress_summary = calculate_progress_by_category(df, product_name)
                 total_time_decimal = task_total_time["워킹데이 소요 시간"].sum()
                 total_time_formatted = format_hours(total_time_decimal)
-                update_spreadsheet_with_total_time(spreadsheet_id, order_no, total_time_formatted, sheet_values)
-                print(f"🎯 총 소요시간 {total_time_formatted}이 W열에 업데이트되었습니다.")
-                mechanical_time_decimal = task_total_time[task_total_time["작업 분류"] == "기구"][
-                    "워킹데이 소요 시간"
-                ].sum()
-                electrical_time_decimal = task_total_time[task_total_time["작업 분류"] == "전장"][
-                    "워킹데이 소요 시간"
-                ].sum()
-                inspection_time_decimal = task_total_time[task_total_time["작업 분류"] == "검사"][
-                    "워킹데이 소요 시간"
-                ].sum()
-                finishing_time_decimal = task_total_time[task_total_time["작업 분류"] == "마무리"][
-                    "워킹데이 소요 시간"
-                ].sum()
+                update_spreadsheet_with_total_time(
+                    spreadsheet_id, order_no, total_time_formatted, sheet_values
+                )
+                print(
+                    f"🎯 총 소요시간 {total_time_formatted}이 W열에 업데이트되었습니다."
+                )
+                mechanical_time_decimal = task_total_time[
+                    task_total_time["작업 분류"] == "기구"
+                ]["워킹데이 소요 시간"].sum()
+                electrical_time_decimal = task_total_time[
+                    task_total_time["작업 분류"] == "전장"
+                ]["워킹데이 소요 시간"].sum()
+                inspection_time_decimal = task_total_time[
+                    task_total_time["작업 분류"] == "검사"
+                ]["워킹데이 소요 시간"].sum()
+                finishing_time_decimal = task_total_time[
+                    task_total_time["작업 분류"] == "마무리"
+                ]["워킹데이 소요 시간"].sum()
                 update_spreadsheet_with_mechanical_time(
-                    spreadsheet_id, order_no, format_hours(mechanical_time_decimal), sheet_values
+                    spreadsheet_id,
+                    order_no,
+                    format_hours(mechanical_time_decimal),
+                    sheet_values,
                 )
                 update_spreadsheet_with_electrical_time(
-                    spreadsheet_id, order_no, format_hours(electrical_time_decimal), sheet_values
+                    spreadsheet_id,
+                    order_no,
+                    format_hours(electrical_time_decimal),
+                    sheet_values,
                 )
                 update_spreadsheet_with_inspection_time(
-                    spreadsheet_id, order_no, format_hours(inspection_time_decimal), sheet_values
+                    spreadsheet_id,
+                    order_no,
+                    format_hours(inspection_time_decimal),
+                    sheet_values,
                 )
                 update_spreadsheet_with_finishing_time(
-                    spreadsheet_id, order_no, format_hours(finishing_time_decimal), sheet_values
+                    spreadsheet_id,
+                    order_no,
+                    format_hours(finishing_time_decimal),
+                    sheet_values,
                 )
                 print(f"🎯 모델 '{order_no}'의 작업별 소요시간이 업데이트되었습니다.")
                 avg_mapping = get_avg_time_mapping(product_name)
@@ -1991,7 +2351,10 @@ def collect_and_process_data():
                     mech_partner=mech_partner,
                     elec_partner=elec_partner,
                 )
-                if any(stats["nan_count"] > 0 or stats["ot_count"] > 0 for stats in occurrence_stats.values()):
+                if any(
+                    stats["nan_count"] > 0 or stats["ot_count"] > 0
+                    for stats in occurrence_stats.values()
+                ):
                     all_results.append(
                         (
                             order_no,
@@ -2010,7 +2373,9 @@ def collect_and_process_data():
                 print(f"✅ 모델 '{order_no}' 처리 완료.\n")
                 systime.sleep(1)
             except Exception as e:
-                print(f"❌ [오류 발생: 스프레드시트 ID {target_spreadsheet_id}] -> {e}\n")
+                print(
+                    f"❌ [오류 발생: 스프레드시트 ID {target_spreadsheet_id}] -> {e}\n"
+                )
                 systime.sleep(5)
 
     iterator = iter(target_ids)
@@ -2035,7 +2400,9 @@ def save_results_to_json(all_results, drive_service):
     execution_time_for_json = execution_time_str  # 기존 형식 유지: "20250618_231207"
     weekday_kor = ["월", "화", "수", "목", "금", "토", "일"][now_kst.weekday()]
     session = now_kst.weekday() + 1
-    filename = f"output/nan_ot_results_{execution_time_str}_{weekday_kor}_{session}회차.json"
+    filename = (
+        f"output/nan_ot_results_{execution_time_str}_{weekday_kor}_{session}회차.json"
+    )
     os.makedirs("output", exist_ok=True)
 
     results_list = []
@@ -2052,7 +2419,9 @@ def save_results_to_json(all_results, drive_service):
             progress_summary,
         ) = res
 
-        total_tasks = sum(stats.get("total_count", 0) for stats in occurrence_stats.values())
+        total_tasks = sum(
+            stats.get("total_count", 0) for stats in occurrence_stats.values()
+        )
 
         def calc_ratio(cat_stats):
             total_count = cat_stats.get("total_count", 0)
@@ -2064,11 +2433,17 @@ def save_results_to_json(all_results, drive_service):
 
         ratios = {}
         if "기구" in occurrence_stats:
-            ratios["mech_nan_ratio"], ratios["mech_ot_ratio"] = calc_ratio(occurrence_stats["기구"])
+            ratios["mech_nan_ratio"], ratios["mech_ot_ratio"] = calc_ratio(
+                occurrence_stats["기구"]
+            )
         if "전장" in occurrence_stats:
-            ratios["elec_nan_ratio"], ratios["elec_ot_ratio"] = calc_ratio(occurrence_stats["전장"])
+            ratios["elec_nan_ratio"], ratios["elec_ot_ratio"] = calc_ratio(
+                occurrence_stats["전장"]
+            )
         if "TMS_반제품" in occurrence_stats:
-            ratios["tms_nan_ratio"], ratios["tms_ot_ratio"] = calc_ratio(occurrence_stats["TMS_반제품"])
+            ratios["tms_nan_ratio"], ratios["tms_ot_ratio"] = calc_ratio(
+                occurrence_stats["TMS_반제품"]
+            )
 
         # 기존 JSON 구조에 맞게 occurrence_stats에서 세부 정보 제거
         cleaned_occurrence_stats = {}
@@ -2105,28 +2480,56 @@ def save_results_to_json(all_results, drive_service):
     print(f"✅ JSON 저장 완료: {filename}")
 
     # 업로드 시 JSON 전용 폴더 ID 사용
-    file_metadata = {"name": os.path.basename(filename), "parents": [JSON_DRIVE_FOLDER_ID]}
+    file_metadata = {
+        "name": os.path.basename(filename),
+        "parents": [JSON_DRIVE_FOLDER_ID],
+    }
     media = MediaFileUpload(filename, mimetype="application/json")
-    uploaded = drive_service.files().create(body=file_metadata, media_body=media, fields="id, name").execute()
-    print(f"✅ JSON 구글 드라이브 업로드 완료: {uploaded.get('name')} (id: {uploaded.get('id')})")
+    uploaded = (
+        drive_service.files()
+        .create(body=file_metadata, media_body=media, fields="id, name")
+        .execute()
+    )
+    print(
+        f"✅ JSON 구글 드라이브 업로드 완료: {uploaded.get('name')} (id: {uploaded.get('id')})"
+    )
 
     return uploaded.get("id")
 
 
-def load_json_files_from_drive(drive_service, period="weekly", week_number=None, friday_only=False):
+def load_json_files_from_drive(
+    drive_service, period="weekly", week_number=None, target_day=None
+):
     """
     Google Drive 폴더 내 JSON 파일 로드
     period: "weekly" (주간), "monthly" (월간)
     week_number: 특정 주차 필터링 (주간용)
-    friday_only: 금요일 파일만 로드 (월간용)
+    target_day: 특정 요일 파일만 로드 ("friday", "sunday", None=모든 요일, "mixed"=주차별 혼합)
     """
+
+    # 월간 히트맵용 스마트 target_day 자동 설정 (효율성 개선)
+    if period == "monthly" and target_day is None:
+        target_day = "mixed"  # 32주 이전=금요일, 33주 이후=일요일 혼합
+        print("📊 월간 히트맵: 32주 이전=금요일, 33주 이후=일요일 JSON 혼합 로드")
+
     query = f"'{JSON_DRIVE_FOLDER_ID}' in parents and name contains 'nan_ot_results_'"
-    if friday_only:
+    if target_day == "friday":
         query += " and name contains '_금_'"
+    elif target_day == "sunday":
+        query += " and name contains '_일_'"
+    elif target_day == "mixed":
+        # 금요일과 일요일 모두 포함 (나중에 주차별로 필터링)
+        query += " and (name contains '_금_' or name contains '_일_')"
+    # target_day가 None이면 모든 요일 포함
 
     # 최대 3번까지 재시도 (Drive 파일 처리 지연 대응)
     for attempt in range(3):
-        files = drive_service.files().list(q=query, fields="files(id, name)").execute().get("files", [])
+        files = (
+            drive_service.files()
+            .list(q=query, fields="files(id, name)")
+            .execute()
+            .get("files", [])
+        )
 
         if files:
             break
@@ -2157,6 +2560,17 @@ def load_json_files_from_drive(drive_service, period="weekly", week_number=None,
         if week_number is not None and file_week != week_number:
             continue
 
+        # mixed 모드에서 주차별 요일 필터링 (32주 이전=금요일, 33주 이후=일요일)
+        if target_day == "mixed":
+            if file_week < 33:
+                # 32주 이전: 금요일만
+                if "_금_" not in file_name:
+                    continue
+            else:
+                # 33주 이후: 일요일만
+                if "_일_" not in file_name:
+                    continue
+
         print(f"📁 JSON 파일 로드 중: {file_name}")
         file_id = file["id"]
         request = drive_service.files().get_media(fileId=file_id)
@@ -2177,11 +2591,18 @@ def ratio_calc(stats):
     return (nan_count / total * 100) if total > 0 else 0
 
 
-def generate_heatmap(drive_service, period="weekly", group_by="partner", week_number=None):
+def generate_heatmap(
+    drive_service,
+    period="weekly",
+    group_by="partner",
+    week_number=None,
+    target_day=None,
+):
     """
     히트맵 생성 함수
     period: "weekly" (주간), "monthly" (월간)
     group_by: "partner" (협력사), "model" (모델)
+    target_day: 월간 히트맵용 특정 요일 ("friday", "sunday", None=auto)
     """
     # 폰트 설정 추가
     global font_prop
@@ -2191,9 +2612,10 @@ def generate_heatmap(drive_service, period="weekly", group_by="partner", week_nu
     except NameError:
         # font_prop가 정의되지 않은 경우 기본값으로 설정
         font_prop = None
-    # 데이터 로드
-    friday_only = period == "monthly"
-    all_data = load_json_files_from_drive(drive_service, period, week_number, friday_only)
+    # 데이터 로드 (월간 히트맵의 경우 load_json_files_from_drive에서 스마트 target_day 자동 설정)
+    all_data = load_json_files_from_drive(
+        drive_service, period, week_number, target_day
+    )
 
     if not all_data:
         print("⚠️ 데이터를 로드할 수 없습니다.")
@@ -2286,11 +2708,15 @@ def generate_heatmap(drive_service, period="weekly", group_by="partner", week_nu
                         total_nan_ratio += group[col].mean()
                         count += 1
                 avg_nan_ratio = total_nan_ratio / count if count > 0 else 0
-                model_daily_data.append({"day": day, "model_name": model, "avg_nan_ratio": avg_nan_ratio})
+                model_daily_data.append(
+                    {"day": day, "model_name": model, "avg_nan_ratio": avg_nan_ratio}
+                )
 
             model_df = pd.DataFrame(model_daily_data)
             if not model_df.empty:
-                df_grouped = model_df.pivot(index="model_name", columns="day", values="avg_nan_ratio").fillna(0)
+                df_grouped = model_df.pivot(
+                    index="model_name", columns="day", values="avg_nan_ratio"
+                ).fillna(0)
                 labels = [f"{d.month}월{d.day}일" for d in df_grouped.columns]
             else:
                 print("⚠️ 모델별 주간 데이터가 없습니다.")
@@ -2300,7 +2726,9 @@ def generate_heatmap(drive_service, period="weekly", group_by="partner", week_nu
 
     elif period == "monthly":
         if group_by == "partner":
-            df_grouped = df.groupby(df["date"].dt.to_period("M")).mean(numeric_only=True)
+            df_grouped = df.groupby(df["date"].dt.to_period("M")).mean(
+                numeric_only=True
+            )
             df_grouped.index = df_grouped.index.to_timestamp()
             categories = partner_categories
             labels = [d.strftime("%Y-%m") for d in df_grouped.index]
@@ -2308,7 +2736,11 @@ def generate_heatmap(drive_service, period="weekly", group_by="partner", week_nu
             y_label = "협력사"
         elif group_by == "model":
             # 기존 방식과 완전히 동일: 월간 모델별 처리
-            df_grouped = df.groupby([df["date"].dt.to_period("M"), "model_name"]).mean(numeric_only=True).reset_index()
+            df_grouped = (
+                df.groupby([df["date"].dt.to_period("M"), "model_name"])
+                .mean(numeric_only=True)
+                .reset_index()
+            )
             df_grouped["date"] = df_grouped["date"].apply(lambda x: x.to_timestamp())
 
             # 모델명 리스트 생성 (categories 변수)
@@ -2319,7 +2751,9 @@ def generate_heatmap(drive_service, period="weekly", group_by="partner", week_nu
 
             # Pivot 테이블 생성: 모든 협력사 비율 컬럼 유지
             df_grouped = df_grouped.pivot(
-                index="date", columns="model_name", values=[col[0] for col in partner_categories]
+                index="date",
+                columns="model_name",
+                values=[col[0] for col in partner_categories],
             )
 
             # 핵심! 기존 방식: 컬럼명 단순화
@@ -2339,19 +2773,34 @@ def generate_heatmap(drive_service, period="weekly", group_by="partner", week_nu
 
     # 히트맵 생성
     plt.figure(figsize=(12, max(6, len(heatmap_data.index) * 0.6)))
-    sns.heatmap(heatmap_data, annot=True, fmt=".1f", cmap="YlOrRd", cbar_kws={"label": "NaN 비율 (%)"}, linewidths=0.5)
+    sns.heatmap(
+        heatmap_data,
+        annot=True,
+        fmt=".1f",
+        cmap="YlOrRd",
+        cbar_kws={"label": "NaN 비율 (%)"},
+        linewidths=0.5,
+    )
 
     if font_prop:
         plt.title(title, fontproperties=font_prop, fontsize=16)
         plt.xlabel("측정 날짜", fontproperties=font_prop)
         plt.ylabel(y_label, fontproperties=font_prop)
-        plt.xticks(ticks=np.arange(len(labels)) + 0.5, labels=labels, rotation=45, ha="right", fontproperties=font_prop)
+        plt.xticks(
+            ticks=np.arange(len(labels)) + 0.5,
+            labels=labels,
+            rotation=45,
+            ha="right",
+            fontproperties=font_prop,
+        )
         plt.yticks(rotation=0, fontproperties=font_prop)
     else:
         plt.title(title, fontsize=16)
         plt.xlabel("측정 날짜")
         plt.ylabel(y_label)
-        plt.xticks(ticks=np.arange(len(labels)) + 0.5, labels=labels, rotation=45, ha="right")
+        plt.xticks(
+            ticks=np.arange(len(labels)) + 0.5, labels=labels, rotation=45, ha="right"
+        )
         plt.yticks(rotation=0)
     plt.tight_layout()
 
@@ -2378,15 +2827,22 @@ def generate_weekly_report_heatmap(drive_service, output_path=None):
     except NameError:
         # font_prop가 정의되지 않은 경우 기본값으로 설정
         font_prop = None
-    # 1. 이번 주 날짜 계산 (월요일 ~ 금요일)
+    # 1. 이번 주 날짜 및 주차 계산 (월요일 ~ 금요일)
     today = datetime.now(pytz.timezone("Asia/Seoul"))
     start_of_week = today - timedelta(days=today.weekday())
     end_of_week = start_of_week + timedelta(days=4)
-    print(f"\n--- 📊 주간 히트맵 생성을 위해 이번 주 데이터를 로드합니다 ---")
-    print(f"({start_of_week.strftime('%Y-%m-%d')} ~ {end_of_week.strftime('%Y-%m-%d')})")
+    current_week = today.isocalendar().week
+    print(
+        f"\n--- 📊 주간 히트맵 생성을 위해 {current_week}주차 데이터를 로드합니다 ---"
+    )
+    print(
+        f"({start_of_week.strftime('%Y-%m-%d')} ~ {end_of_week.strftime('%Y-%m-%d')})"
+    )
 
-    # 2. 이번 주 데이터 로드
-    all_data = load_json_files_from_drive(drive_service, period="weekly")
+    # 2. 이번 주차 데이터만 로드 (효율성 개선)
+    all_data = load_json_files_from_drive(
+        drive_service, period="weekly", week_number=current_week
+    )
 
     if not all_data:
         print("⚠️ 이번 주 데이터가 없어 주간 히트맵을 생성할 수 없습니다.")
@@ -2497,7 +2953,9 @@ def generate_weekly_report_heatmap(drive_service, output_path=None):
     date_labels = list(df_grouped.index)
 
     # 히트맵 생성
-    plt.figure(figsize=(max(8, len(date_labels) * 1.5), max(6, len(partner_labels) * 0.8)))
+    plt.figure(
+        figsize=(max(8, len(date_labels) * 1.5), max(6, len(partner_labels) * 0.8))
+    )
     sns.heatmap(
         heatmap_array,
         annot=True,
@@ -2525,7 +2983,9 @@ def generate_weekly_report_heatmap(drive_service, output_path=None):
 
     # 날짜가 포함된 파일명 생성
     if output_path is None:
-        output_path = f"output/weekly_partner_nan_heatmap_{datetime.now().strftime('%Y%m%d')}.png"
+        output_path = (
+            f"output/weekly_partner_nan_heatmap_{datetime.now().strftime('%Y%m%d')}.png"
+        )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path, bbox_inches="tight")
@@ -2535,21 +2995,35 @@ def generate_weekly_report_heatmap(drive_service, output_path=None):
     return output_path
 
 
-def is_last_friday_in_month():
-    """월의 마지막 금요일인지 확인"""
+def should_generate_monthly_heatmap():
+    """월간 히트맵 생성 조건 확인 (33주부터 일요일로 변경)"""
     today = datetime.now(pytz.timezone("Asia/Seoul"))
+    current_week = today.isocalendar().week
 
-    # 금요일(4)인지 확인
-    if today.weekday() != 4:
-        return False
+    if current_week < 33:
+        # 32주 이전: 금요일 기준
+        if today.weekday() != 4:  # 금요일이 아니면
+            return False, "friday"
 
-    # 다음 주 금요일이 다음 달인지 확인
-    next_friday = today + timedelta(days=7)
-    return next_friday.month != today.month
+        # 다음 주 금요일이 다음 달인지 확인
+        next_friday = today + timedelta(days=7)
+        return next_friday.month != today.month, "friday"
+    else:
+        # 33주부터: 일요일 기준
+        if today.weekday() != 6:  # 일요일이 아니면
+            return False, "sunday"
+
+        # 다음 주 일요일이 다음 달인지 확인
+        next_sunday = today + timedelta(days=7)
+        return next_sunday.month != today.month, "sunday"
 
 
 def generate_final_html(
-    all_results, heatmap_path, output_filename="partner.html", monthly_partner_link=None, monthly_model_link=None
+    all_results,
+    heatmap_path,
+    output_filename="partner.html",
+    monthly_partner_link=None,
+    monthly_model_link=None,
 ):
     """
     처리된 데이터와 히트맵을 바탕으로 최종 HTML 파일을 생성합니다.
@@ -2618,18 +3092,29 @@ if __name__ == "__main__":
         # 3-1. 주간 리포트용 히트맵 (이번 주 모든 JSON 취합)
         heatmap_path = generate_weekly_report_heatmap(drive_service)
 
-        # 3-2. 월간 히트맵 생성 (월의 마지막 금요일에만)
+        # 3-2. 월간 히트맵 생성 (33주부터 일요일 기준으로 변경)
         monthly_partner_link = None
         monthly_model_link = None
 
-        if is_last_friday_in_month():
-            print("\n--- 📊 월의 마지막 금요일: 월간 히트맵 생성 시작 ---")
+        should_generate, target_day = should_generate_monthly_heatmap()
+        if should_generate:
+            if target_day == "friday":
+                print("\n--- 📊 월의 마지막 금요일: 월간 히트맵 생성 시작 ---")
+            else:
+                print("\n--- 📊 월의 마지막 일요일: 월간 히트맵 생성 시작 ---")
 
             # 월간 협력사 히트맵
-            monthly_partner_heatmap = generate_heatmap(drive_service, period="monthly", group_by="partner")
+            monthly_partner_heatmap = generate_heatmap(
+                drive_service,
+                period="monthly",
+                group_by="partner",
+                target_day=target_day,
+            )
 
             # 월간 모델 히트맵
-            monthly_model_heatmap = generate_heatmap(drive_service, period="monthly", group_by="model")
+            monthly_model_heatmap = generate_heatmap(
+                drive_service, period="monthly", group_by="model", target_day=target_day
+            )
 
             print(f"✅ 월간 히트맵 생성 완료:")
             if monthly_partner_heatmap:
@@ -2645,7 +3130,15 @@ if __name__ == "__main__":
                 if monthly_model_link:
                     print(f"   - 모델별 드라이브 업로드 완료: {monthly_model_link}")
         else:
-            print("ℹ️ 월의 마지막 금요일이 아니므로 월간 히트맵을 생성하지 않습니다.")
+            current_week = datetime.now(pytz.timezone("Asia/Seoul")).isocalendar().week
+            if current_week < 33:
+                print(
+                    "ℹ️ 월의 마지막 금요일이 아니므로 월간 히트맵을 생성하지 않습니다."
+                )
+            else:
+                print(
+                    "ℹ️ 월의 마지막 일요일이 아니므로 월간 히트맵을 생성하지 않습니다."
+                )
 
         # 4. 최종 HTML 생성
         print("\n--- 4. 최종 HTML 리포트 생성 시작 ---")
@@ -2680,7 +3173,9 @@ if __name__ == "__main__":
             else:
                 print("🧪 TEST_MODE: GitHub 업로드 생략")
 
-        print(f"📤 GitHub 업로드 설정: GITHUB_UPLOAD={GITHUB_UPLOAD}, 실제 업로드 여부: {should_upload_github}")
+        print(
+            f"📤 GitHub 업로드 설정: GITHUB_UPLOAD={GITHUB_UPLOAD}, 실제 업로드 여부: {should_upload_github}"
+        )
 
         if should_upload_github:
             upload_to_github(final_html_path)
@@ -2692,7 +3187,9 @@ if __name__ == "__main__":
         email_body = open(final_html_path, "r", encoding="utf-8").read()
         attachment_files = [f for f in [tasks_file, total_file, heatmap_path] if f]
         send_occurrence_email(
-            f"[알림] PDA Overtime 및 NaN 체크 결과 - 총 {len(all_results)}건", email_body, graph_files=attachment_files
+            f"[알림] PDA Overtime 및 NaN 체크 결과 - 총 {len(all_results)}건",
+            email_body,
+            graph_files=attachment_files,
         )
 
         # 카카오톡 발송
