@@ -1447,6 +1447,7 @@ def build_combined_email_body(
     execution_time = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
     year, week_num, _ = date.today().isocalendar()
     dashboard_link = os.getenv("DASHBOARD_URL", "https://gst-factory.netlify.app")
+    dashboard_link1 = "https://nan-dashboard.netlify.app"
 
     # 고유 값 수집 (필터 드롭다운용)
     unique_values = {
@@ -1753,7 +1754,7 @@ def build_combined_email_body(
             f'<p>📋 <strong>모델 스프레드시트</strong>: <a href="{spreadsheet_url}">바로가기</a></p>'
         )
         lines.append(
-            f'<p>📊 대시보드 링크: <a href="{dashboard_link}">대시보드 바로가기</a></p>'
+            f'<p>📊 대시보드 링크: <a href="{dashboard_link1}">대시보드 바로가기</a></p>'
         )
         lines.append(
             f"<p>📊 그래프 링크:</p><ul>"
